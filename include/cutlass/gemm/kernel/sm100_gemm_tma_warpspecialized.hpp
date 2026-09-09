@@ -614,6 +614,34 @@ public:
 
     pipeline_init_wait(cluster_size);
 
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+    // De-abstraction trace probe K1 (Part C, C.4.3): shared-memory addresses of this CTA, first cluster only.
+    if (TRACE_IN_FIRST_CLUSTER() && threadIdx.x == 0) {
+      TRACE_RECORD(K_SMEM, 16,
+        cute::cast_smem_ptr_to_uint(smem_buf),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.mainloop.full_barrier_[0]),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.mainloop.empty_barrier_[0]),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.clc.full_barrier_[0]),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.clc.empty_barrier_[0]),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.accumulator.empty_barrier_[0]),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.tmem_dealloc),
+        cute::cast_smem_ptr_to_uint(&shared_storage.clc_response[0]),
+        cute::cast_smem_ptr_to_uint(shared_storage.tensors.mainloop.smem_A.begin()),
+        cute::cast_smem_ptr_to_uint(shared_storage.tensors.mainloop.smem_B.begin()));
+      TRACE_RECORD(K_SMEM2, 16,
+        cute::cast_smem_ptr_to_uint(shared_storage.tensors.epilogue.collective.smem_D.begin()),
+        cute::cast_smem_ptr_to_uint(&shared_storage.tmem_base_ptr),
+        uint64_t(is_epi_load_needed),
+        uint64_t(is_first_cta_in_cluster),   // the CTA whose warp 1 is the active scheduler (is_participant.sched is per warp)
+        uint64_t(cta_rank_in_cluster),
+        uint64_t(mma_peer_cta_rank),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.accumulator.full_barrier_[0]),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.clc_throttle.full_barrier_[0]),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.load_order.barrier_[0][0]),
+        cute::cast_smem_ptr_to_uint(&shared_storage.pipelines.epi_load.full_barrier_[0]));
+    }
+#endif
+
     if (is_participant.main_load) {
       // Ensure that the prefetched kernel does not touch
       // unflushed global memory prior to this instruction
@@ -729,6 +757,12 @@ public:
       __syncwarp();
       tmem_allocation_result_barrier.arrive();
       uint32_t tmem_base_ptr = shared_storage.tmem_base_ptr;
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+      // De-abstraction trace probe K2 (MMA warp): TMEM base returned by tcgen05.alloc
+      if (lane_predicate) {
+        TRACE_RECORD(K_TMEM, 1024, tmem_base_ptr, cta_rank_in_cluster, uint64_t(is_mma_leader_cta), 0);
+      }
+#endif
       collective_mainloop.set_tmem_offsets(tmem_storage, tmem_base_ptr);
 
       auto mma_inputs = collective_mainloop.mma_init(
@@ -870,6 +904,12 @@ public:
       // Wait for tmem allocate here
       tmem_allocation_result_barrier.arrive_and_wait();
       uint32_t tmem_base_ptr = shared_storage.tmem_base_ptr;
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+      // De-abstraction trace probe K2 (epilogue warps): the TMEM base as read by the consumers
+      if (threadIdx.x == 128) {
+        TRACE_RECORD(K_TMEM, 1024, tmem_base_ptr, cta_rank_in_cluster, uint64_t(is_mma_leader_cta), 1);
+      }
+#endif
       collective_mainloop.set_tmem_offsets(tmem_storage, tmem_base_ptr);
 
       bool do_tail_store = false;

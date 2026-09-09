@@ -77,12 +77,14 @@ struct TMA_LOAD_Unpack
 
     auto src_coord = src(Int<0>{});
     void* dst_ptr = cute::raw_pointer_cast(dst.data());
-#if 0
-    auto [c0,c1,c2,c3,c4] = append<5>(src_coord, 0);
-    printf("THR (%d,%d,%d) BLK (%d,%d,%d) TMACRD (%d,%d,%d,%d,%d) SMEMADDR (%p)\n",
-          threadIdx.x, threadIdx.y, threadIdx.z,
-          blockIdx.x, blockIdx.y, blockIdx.z,
-          int32_t(c0), int32_t(c1), int32_t(c2), int32_t(c3), int32_t(c4), dst_ptr);
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+    // De-abstraction trace probe K4a (Part C, C.4.3): TMA load coordinates, smem destination and mbarrier operand
+    if (TRACE_IN_FIRST_CLUSTER()) {
+      auto trace_crd = append<5>(src_coord, 0);
+      TRACE_RECORD(K_TMA_LOAD, 128,
+                   uint64_t(int32_t(get<0>(trace_crd))), uint64_t(int32_t(get<1>(trace_crd))), uint64_t(int32_t(get<2>(trace_crd))),
+                   cast_smem_ptr_to_uint(dst_ptr), uint64_t(size(src)), cast_smem_ptr_to_uint(get<1>(traits.opargs_)));
+    }
 #endif
     return detail::explode_tuple(detail::CallCOPY<CopyOp>{},
                                  traits.opargs_, tuple_seq<decltype(traits.opargs_)>{},
@@ -411,12 +413,17 @@ struct Copy_Traits<SM90_TMA_STORE, NumBitsPerTMA, AuxParams_>
     void const* const desc_ptr = &(traits.tma_desc_);
     void const* const src_ptr  = cute::raw_pointer_cast(src.data());
     auto dst_coord = dst(Int<0>{});
-#if 0
-    auto [c0,c1,c2,c3,c4] = append<5>(dst_coord, 0);
-    printf("THR (%d,%d,%d) BLK (%d,%d,%d) TMACRD (%d,%d,%d,%d,%d) SMEMADDR (%p)\n",
-           threadIdx.x, threadIdx.y, threadIdx.z,
-           blockIdx.x, blockIdx.y, blockIdx.z,
-           int32_t(c0), int32_t(c1), int32_t(c2), int32_t(c3), int32_t(c4), src_ptr);
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+    // De-abstraction trace probe K4b (Part C, C.4.3): TMA store coordinates, smem source and the number of lanes issuing
+    if (TRACE_IN_FIRST_CLUSTER()) {
+      uint32_t const trace_lanes = __popc(__activemask());   // evaluated by every lane before the lane-0 branch
+      if ((threadIdx.x % 32) == 0) {
+        auto trace_crd = append<5>(dst_coord, 0);
+        TRACE_RECORD(K_TMA_STORE, 256,
+                     uint64_t(int32_t(get<0>(trace_crd))), uint64_t(int32_t(get<1>(trace_crd))), uint64_t(int32_t(get<2>(trace_crd))),
+                     cast_smem_ptr_to_uint(src_ptr), uint64_t(trace_lanes));
+      }
+    }
 #endif
     return detail::explode_tuple(detail::CallCOPY<SM90_TMA_STORE>{},
                                  make_tuple(desc_ptr, src_ptr), seq<0,1>{},
@@ -1068,6 +1075,31 @@ make_tma_copy_desc(Tensor<GEngine,GLayout> const& gtensor,         // The origin
         reinterpret_cast<uint64_t*>(&tma_desc)[1] &= ~(1llu << 21);
       }
     }
+#if defined(CUTLASS_DEABSTRACTION_TRACE)
+    // De-abstraction trace probe H2b (Part C, C.4.1): the encoder argument tuple of the first six encodes
+    if (::g_trace_encode_count < 6) {
+      char const* trace_fmt_name = tma_format == CU_TENSOR_MAP_DATA_TYPE_FLOAT16 ? "FLOAT16"
+                                 : tma_format == CU_TENSOR_MAP_DATA_TYPE_FLOAT32 ? "FLOAT32" : "OTHER";
+      char const* trace_swz_name = smem_swizzle == CU_TENSOR_MAP_SWIZZLE_128B ? "SWIZZLE_128B"
+    #if ((__CUDACC_VER_MAJOR__ > 12) || ((__CUDACC_VER_MAJOR__ == 12) && (__CUDACC_VER_MINOR__ > 6)))
+                                 : smem_swizzle == CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B ? "SWIZZLE_128B_ATOM_32B"
+    #endif
+                                 : "OTHER";
+      char const* trace_l2_name  = tma_l2Promotion == CU_TENSOR_MAP_L2_PROMOTION_L2_128B ? "L2_128B" : "OTHER";
+      char const* trace_il_name  = tma_interleave == CU_TENSOR_MAP_INTERLEAVE_NONE ? "INTERLEAVE_NONE" : "OTHER";
+      char const* trace_oob_name = tma_oobFill == CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE ? "OOB_FILL_NONE" : "OTHER";
+      printf("TRACE_ENCODE %d format=%s(%d) dim=%d gmem=%p shape=%llu,%llu,%llu stride_bytes=%llu,%llu box=%u,%u,%u elem_stride=%u,%u,%u "
+             "interleave=%s(%d) swizzle=%s(%d) l2promo=%s(%d) oobfill=%s(%d) result=%d driver=%d\n",
+             ::g_trace_encode_count, trace_fmt_name, int(tma_format), tma_dim, gmem_address,
+             (unsigned long long)gmem_prob_shape[0], (unsigned long long)gmem_prob_shape[1], (unsigned long long)gmem_prob_shape[2],
+             (unsigned long long)gmem_prob_stride[1], (unsigned long long)gmem_prob_stride[2],
+             smem_box_shape[0], smem_box_shape[1], smem_box_shape[2],
+             smem_box_stride[0], smem_box_stride[1], smem_box_stride[2],
+             trace_il_name, int(tma_interleave), trace_swz_name, int(smem_swizzle), trace_l2_name, int(tma_l2Promotion),
+             trace_oob_name, int(tma_oobFill), int(result), driver_version);
+    }
+    ++::g_trace_encode_count;
+#endif
 
     if (result != CUDA_SUCCESS) {
       std::cerr << "TMA Desc Addr:   " << &tma_desc

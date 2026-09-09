@@ -569,6 +569,12 @@ struct SM100_MMA_F16BF16_2x1SM_SS
 #if defined(CUTE_ARCH_TCGEN05_F16F32_MMA_ENABLED)
     if (cute::elect_one_sync()) {
       uint32_t mask[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+      // De-abstraction trace probe K3 (Part C, C.4.3): operands of the first tcgen05.mma instructions, first cluster only
+      if (TRACE_IN_FIRST_CLUSTER()) {
+        TRACE_RECORD(K_MMA, 32, desc_a, desc_b, tmem_c, uint32_t(idescE >> 32), scaleC);
+      }
+#endif
       asm volatile(
         "{\n\t"
         ".reg .pred p;\n\t"

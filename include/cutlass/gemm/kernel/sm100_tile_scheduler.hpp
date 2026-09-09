@@ -443,6 +443,12 @@ public:
     clc_pipeline.producer_acquire(clc_pipe_producer_state);
 
     if (cute::elect_one_sync()) {
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+      // De-abstraction trace probe K5a (Part C, C.4.3): every CLC query issued by the scheduler warp
+      TRACE_RECORD(K_CLC_ISSUE, 8192,
+                   uint64_t(clc_pipe_producer_state.index()), uint64_t(clc_pipe_producer_state.phase()), uint64_t(clc_pipe_producer_state.count()),
+                   uint64_t(mbarrier_addr), uint64_t(blockIdx.x / 2), uint64_t(blockIdx.y / 2));
+#endif
       issue_clc_query(clc_pipe_producer_state, mbarrier_addr, clc_response_ptr_);
     }
 
@@ -462,11 +468,36 @@ public:
     scheduler_pipeline.consumer_wait(scheduler_pipe_consumer_state);
     uint32_t smem_addr = cute::cast_smem_ptr_to_uint(&clc_response_ptr_[scheduler_pipe_consumer_state.index()]);
     auto work_tile = work_tile_info_from_clc_response(smem_addr);
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+    WorkTileInfo trace_raw_tile = work_tile;   // the undecoded response (K5b/K5c below)
+#endif
     scheduler_pipeline.consumer_release(scheduler_pipe_consumer_state);
 
     work_tile = swizzle_and_rasterize(
       work_tile.M_idx, work_tile.N_idx, work_tile.L_idx, work_tile.is_valid(),
       block_id_in_cluster_.x, block_id_in_cluster_.y);
+#if defined(CUTLASS_DEABSTRACTION_TRACE) && defined(__CUDA_ARCH__)
+    // De-abstraction trace probes K5b (scheduler warp of rank 0) and K5c (MMA warp of every CTA): every consumed response
+    {
+      int const trace_warp = threadIdx.x / 32;   // no shuffle: the probe must not add a warp-collective operation
+      if ((threadIdx.x % 32) == 0) {
+        if (trace_warp == 1 && cute::block_rank_in_cluster() == 0) {
+          TRACE_RECORD(K_CLC_SCHED, 8192,
+                       uint64_t(int32_t(trace_raw_tile.M_idx)), uint64_t(int32_t(trace_raw_tile.N_idx)), uint64_t(int32_t(trace_raw_tile.L_idx)),
+                       uint64_t(trace_raw_tile.is_valid()),
+                       uint64_t(scheduler_pipe_consumer_state.index()), uint64_t(scheduler_pipe_consumer_state.phase()), uint64_t(scheduler_pipe_consumer_state.count()),
+                       uint64_t(int32_t(work_tile.M_idx)), uint64_t(int32_t(work_tile.N_idx)));
+        }
+        else if (trace_warp == 0) {
+          TRACE_RECORD(K_CLC_MMA, 16384,
+                       uint64_t(int32_t(trace_raw_tile.M_idx)), uint64_t(int32_t(trace_raw_tile.N_idx)), uint64_t(int32_t(trace_raw_tile.L_idx)),
+                       uint64_t(trace_raw_tile.is_valid()),
+                       uint64_t(scheduler_pipe_consumer_state.index()), uint64_t(scheduler_pipe_consumer_state.phase()), uint64_t(scheduler_pipe_consumer_state.count()),
+                       uint64_t(int32_t(work_tile.M_idx)), uint64_t(int32_t(work_tile.N_idx)));
+        }
+      }
+    }
+#endif
 
     // Return true to indicate that the tile scheduler pipeline state should be advanced
     return cute::make_tuple(work_tile, true);

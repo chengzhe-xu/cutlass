@@ -1,3 +1,7 @@
+// #define CUTLASS_DEABSTRACTION_TRACE 1  // De-abstraction trace toggle (Part C of Semantics-preserving-de-abstraction.md): uncomment, rebuild with the unchanged cmake command, run the fixed command once; re-comment for the performance binary.
+#if defined(CUTLASS_DEABSTRACTION_TRACE)
+#include "deabstraction_trace.hpp"
+#endif
 /***************************************************************************************************
  * Copyright (c) 2024 - 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
@@ -81,6 +85,9 @@
 #include "cutlass/util/reference/device/tensor_fill.h"
 
 #include "helper.h"
+#if defined(CUTLASS_DEABSTRACTION_TRACE)
+#include "deabstraction_trace_probes.hpp"
+#endif
 
 using namespace cute;
 
@@ -378,6 +385,11 @@ int run(Options &options)
 {
   initialize(options);
 
+#if defined(CUTLASS_DEABSTRACTION_TRACE)
+  trace_reset();             // records from here on: K0 probe kernel, then the warm-up GEMM launch
+  trace_probe_kernel_k0();   // C.4.2: addresses, mapa, TMEM base without any CUTLASS kernel code
+#endif
+
   // Instantiate CUTLASS kernel depending on templates
   Gemm gemm;
 
@@ -395,6 +407,9 @@ int run(Options &options)
 
   // Initialize CUTLASS kernel with arguments and workspace pointer
   CUTLASS_CHECK(gemm.initialize(arguments, workspace.get()));
+#if defined(CUTLASS_DEABSTRACTION_TRACE)
+  trace_host_probes<Gemm>(gemm);   // C.4.1: H1 types/sizes/offsets, H2 tensor maps, H5 build macros
+#endif
 
   // Correctness / Warmup iteration
   CUTLASS_CHECK(gemm.run());
@@ -402,6 +417,11 @@ int run(Options &options)
   // Check if output from CUTLASS kernel and reference kernel are equal or not
   Result result;
   result.passed = verify(options);
+#if defined(CUTLASS_DEABSTRACTION_TRACE)
+  trace_host_post_run<Gemm>();     // C.4.1: H3 launch attributes and occupancy
+  trace_dump("launch0.csv");      // K0 + warm-up launch records
+  trace_disable();                 // the 10 timed launches run without probe traffic
+#endif
 
   std::cout << "  Disposition: " << (result.passed ? "Passed" : "Failed") << std::endl;
 
