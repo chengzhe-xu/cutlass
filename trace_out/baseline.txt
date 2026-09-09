@@ -1,0 +1,25 @@
+=== run 1 ===
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.888144 ms
+  GFLOPS: 1.23799e+06
+=== run 2 ===
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.888659 ms
+  GFLOPS: 1.23727e+06
+=== run 3 ===
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.888122 ms
+  GFLOPS: 1.23802e+06
+=== run 4 ===
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.88896 ms
+  GFLOPS: 1.23685e+06
+=== run 5 ===
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.889062 ms
+  GFLOPS: 1.23671e+06

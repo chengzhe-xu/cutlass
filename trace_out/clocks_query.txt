@@ -1,0 +1,47 @@
+
+==============NVSMI LOG==============
+
+Timestamp                                              : Wed Sep  9 12:40:42 2026
+Driver Version                                         : 610.57.04 [Deprecated; will be removed in CUDA 14.0. Use KMD Version instead]
+CUDA Version                                           : 13.3 [Deprecated; will be removed in CUDA 14.0. Use CUDA UMD Version instead]
+KMD Version                                            : 610.57.04
+CUDA UMD Version                                       : 13.3
+
+Attached GPUs                                          : 1
+GPU 00000000:9D:00.0
+    Clocks
+        Graphics                                       : 1965 MHz
+        SM                                             : 1965 MHz
+        Memory                                         : 3996 MHz
+        Video                                          : 1852 MHz
+    Applications Clocks
+        Graphics                                       : Requested functionality has been deprecated
+        Memory                                         : Requested functionality has been deprecated
+    Default Applications Clocks
+        Graphics                                       : Requested functionality has been deprecated
+        Memory                                         : Requested functionality has been deprecated
+    Deferred Clocks
+        Memory                                         : N/A
+    Max Clocks
+        Graphics                                       : 1965 MHz
+        SM                                             : 1965 MHz
+        Memory                                         : 3996 MHz
+        Video                                          : 1965 MHz
+    Max Customer Boost Clocks
+        Graphics                                       : 1965 MHz
+    SM Clock Samples
+        Duration                                       : N/A
+        Number of Samples                              : N/A
+        Max                                            : N/A
+        Min                                            : N/A
+        Avg                                            : N/A
+    Memory Clock Samples
+        Duration                                       : N/A
+        Number of Samples                              : N/A
+        Max                                            : N/A
+        Min                                            : N/A
+        Avg                                            : N/A
+    Clock Policy
+        Auto Boost                                     : N/A
+        Auto Boost Default                             : N/A
+
