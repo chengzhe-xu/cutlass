@@ -1,0 +1,212 @@
+TRACE_K0 block 2 0 rank 0 smem_base 0x00000400 mapa_peer 0x01000400 mapa_rank0 0x00000400 masked 0x00000400 tmem_base 0x00000000 smid 2
+TRACE_K0 block 3 0 rank 1 smem_base 0x01000400 mapa_peer 0x00000400 mapa_rank0 0x00000400 masked 0x00000400 tmem_base 0x00000000 smid 3
+TRACE_K0 block 2 2 rank 0 smem_base 0x00000400 mapa_peer 0x01000400 mapa_rank0 0x00000400 masked 0x00000400 tmem_base 0x00000000 smid 6
+TRACE_K0 block 3 2 rank 1 smem_base 0x01000400 mapa_peer 0x00000400 mapa_rank0 0x00000400 masked 0x00000400 tmem_base 0x00000000 smid 7
+TRACE_K0 block 2 3 rank 2 smem_base 0x02000400 mapa_peer 0x03000400 mapa_rank0 0x00000400 masked 0x02000400 tmem_base 0x00000000 smid 22
+TRACE_K0 block 3 3 rank 3 smem_base 0x03000400 mapa_peer 0x02000400 mapa_rank0 0x00000400 masked 0x02000400 tmem_base 0x00000000 smid 23
+TRACE_K0 block 2 1 rank 2 smem_base 0x02000400 mapa_peer 0x03000400 mapa_rank0 0x00000400 masked 0x02000400 tmem_base 0x00000000 smid 18
+TRACE_K0 block 3 1 rank 3 smem_base 0x03000400 mapa_peer 0x02000400 mapa_rank0 0x00000400 masked 0x02000400 tmem_base 0x00000000 smid 19
+TRACE_K0 block 0 0 rank 0 smem_base 0x00000400 mapa_peer 0x01000400 mapa_rank0 0x00000400 masked 0x00000400 tmem_base 0x00000000 smid 0
+TRACE_K0 block 1 0 rank 1 smem_base 0x01000400 mapa_peer 0x00000400 mapa_rank0 0x00000400 masked 0x00000400 tmem_base 0x00000000 smid 1
+TRACE_K0 block 0 1 rank 2 smem_base 0x02000400 mapa_peer 0x03000400 mapa_rank0 0x00000400 masked 0x02000400 tmem_base 0x00000000 smid 16
+TRACE_K0 block 1 1 rank 3 smem_base 0x03000400 mapa_peer 0x02000400 mapa_rank0 0x00000400 masked 0x02000400 tmem_base 0x00000000 smid 17
+TRACE_K0 block 1 3 rank 3 smem_base 0x03000400 mapa_peer 0x02000400 mapa_rank0 0x00000400 masked 0x02000400 tmem_base 0x00000000 smid 21
+TRACE_K0 block 0 2 rank 0 smem_base 0x00000400 mapa_peer 0x01000400 mapa_rank0 0x00000400 masked 0x00000400 tmem_base 0x00000000 smid 4
+TRACE_K0 block 0 3 rank 2 smem_base 0x02000400 mapa_peer 0x03000400 mapa_rank0 0x00000400 masked 0x02000400 tmem_base 0x00000000 smid 20
+TRACE_K0 block 1 2 rank 1 smem_base 0x01000400 mapa_peer 0x00000400 mapa_rank0 0x00000400 masked 0x00000400 tmem_base 0x00000000 smid 5
+TRACE_DEV IsGdcGloballyEnabled 1 FEAT_SM100_ALL 1 CUDA_ARCH 1000
+TRACE_HOST explicit_kernel_name explicit_blackwell_fp16_gemm_kernel
+TRACE_HOST sizeof_ExplicitGemmParams 640
+TRACE_HOST explicit_trace 1
+TRACE_ENCODE 0 format=FLOAT16(6) dim=3 gmem=0x1000d600000 shape=8192,8192,1 stride_bytes=16384,0 box=64,64,1 elem_stride=1,1,1 interleave=INTERLEAVE_NONE(0) swizzle=SWIZZLE_128B(3) l2promo=L2_128B(2) oobfill=OOB_FILL_NONE(0) result=0 driver=13030
+TRACE_ENCODE 1 format=FLOAT16(6) dim=3 gmem=0x10015600000 shape=8192,8192,1 stride_bytes=16384,0 box=64,64,1 elem_stride=1,1,1 interleave=INTERLEAVE_NONE(0) swizzle=SWIZZLE_128B(3) l2promo=L2_128B(2) oobfill=OOB_FILL_NONE(0) result=0 driver=13030
+TRACE_ENCODE 2 format=FLOAT16(6) dim=3 gmem=0x1000d600000 shape=8192,8192,1 stride_bytes=16384,0 box=64,64,1 elem_stride=1,1,1 interleave=INTERLEAVE_NONE(0) swizzle=SWIZZLE_128B(3) l2promo=L2_128B(2) oobfill=OOB_FILL_NONE(0) result=0 driver=13030
+TRACE_ENCODE 3 format=FLOAT16(6) dim=3 gmem=0x10015600000 shape=8192,8192,1 stride_bytes=16384,0 box=64,64,1 elem_stride=1,1,1 interleave=INTERLEAVE_NONE(0) swizzle=SWIZZLE_128B(3) l2promo=L2_128B(2) oobfill=OOB_FILL_NONE(0) result=0 driver=13030
+TRACE_ENCODE 4 format=FLOAT32(7) dim=3 gmem=0x7c7fc0000000 shape=8192,8192,1 stride_bytes=32768,0 box=32,16,1 elem_stride=1,1,1 interleave=INTERLEAVE_NONE(0) swizzle=SWIZZLE_128B_ATOM_32B(4) l2promo=L2_128B(2) oobfill=OOB_FILL_NONE(0) result=0 driver=13030
+TRACE_ENCODE 5 format=FLOAT32(7) dim=3 gmem=0x7c7fd0000000 shape=8192,8192,1 stride_bytes=32768,0 box=32,16,1 elem_stride=1,1,1 interleave=INTERLEAVE_NONE(0) swizzle=SWIZZLE_128B_ATOM_32B(4) l2promo=L2_128B(2) oobfill=OOB_FILL_NONE(0) result=0 driver=13030
+TRACE_H1 TiledMma TiledMMA
+  ThrLayoutVMNK:  (_2,_1,_1,_1):(_1,_0,_0,_0)
+  PermutationMNK: (_,_,_)
+MMA_Atom
+  ThrID:      _2:_1
+  Shape_MNK:  (_256,_128,_16)
+  LayoutA_TV: (_2,(_128,_16)):(_128,(_1,_256))
+  LayoutB_TV: (_2,(_64,_16)):(_64,(_1,_128))
+  LayoutC_TV: (_2,(_128,_128)):(_128,(_1,_256))
+
+TRACE_H1 SmemLayoutA Sw<3,4,3> o smem_ptr[16b](unset) o ((_128,_16),_1,_4,(_1,_8)):((_64,_1),_0,_16,(_0,_8192))
+TRACE_H1 SmemLayoutB Sw<3,4,3> o smem_ptr[16b](unset) o ((_64,_16),_1,_4,(_1,_8)):((_64,_1),_0,_16,(_0,_4096))
+TRACE_H1 SmemLayoutAtomC Sw<2,5,2> o smem_ptr[32b](unset) o (_32,_4):(_1,_32)
+TRACE_H1 SmemLayoutAtomD Sw<2,5,2> o smem_ptr[32b](unset) o (_32,_4):(_1,_32)
+TRACE_H1 EpilogueTile (_128:_1,_16:_1)
+TRACE_H1 TileShape (_256,_128,_64)
+TRACE_H1 CtaShape_MNK (_128,_128,_64)
+TRACE_H1 AtomThrShapeMNK (_2,_1,_1)
+TRACE_H1 ClusterShape (_2,_2,_1)
+TRACE_TYPE CollectiveMainloop | void trace_print_type(const char*) [with T = cutlass::gemm::collective::CollectiveMma<cutlass::gemm::MainloopSm100TmaUmmaWarpSpecialized<8, 2, 4, cute::tuple<cute::C<2>, cute::C<2>, cute::C<1> >, cutlass::arch::Sm100>, cute::tuple<cute::C<256>, cute::C<128>, cute::C<64> >, cutlass::half_t, cute::tuple<long int, cute::C<1>, long int>, cutlass::half_t, cute::tuple<long int, cute::C<1>, long int>, cute::TiledMMA<cute::MMA_Atom<cute::SM100_MMA_F16BF16_2x1SM_SS<cutlass::half_t, cutlass::half_t, float, 256, 128, cute::UMMA::Major::K, cute::UMMA::Major::K, cute::UMMA::ScaleIn::One, cute::UMMA::ScaleIn::One> >, cute::Layout<cute::tuple<cute::C<1>, cute::C<1>, cute::C<1> > >, cute::tuple<cute::Underscore, cute::Underscore, cute::Underscore> >, cute::SM100_TMA_2SM_LOAD_MULTICAST, cute::ComposedLayout<cute::Swizzle<3, 4, 3>, cute::smem_ptr_flag_bits<16>, cute::Layout<cute::tuple<cute::C<8>, cute::C<64> >, cute::tuple<cute::C<64>, cute::C<1> > > >, void, cute::identity, cute::SM100_TMA_2SM_LOAD, cute::ComposedLayout<cute::Swizzle<3, 4, 3>, cute::smem_ptr_flag_bits<16>, cute::Layout<cute::tuple<cute::C<8>, cute::C<64> >, cute::tuple<cute::C<64>, cute::C<1> > > >, void, cute::identity>]
+TRACE_TYPE CollectiveEpilogue | void trace_print_type(const char*) [with T = cutlass::epilogue::collective::CollectiveEpilogue<cutlass::epilogue::Sm100TmaWarpSpecialized<4, 2, 16, true, false>, cute::tuple<cute::C<128>, cute::C<128>, cute::C<64> >, cute::tuple<cute::Layout<cute::C<128>, cute::C<1> >, cute::Layout<cute::C<16>, cute::C<1> > >, float, cute::tuple<cute::C<1>, long int, long int>, float, cute::tuple<cute::C<1>, long int, long int>, cutlass::epilogue::fusion::FusionCallbacks<cutlass::epilogue::Sm100TmaWarpSpecialized<4, 2, 16, true, false>, cutlass::epilogue::fusion::LinearCombination<float, float, float, float, cutlass::FloatRoundStyle::round_to_nearest>, cute::tuple<cute::C<128>, cute::C<128>, cute::C<64> >, cute::tuple<cute::Layout<cute::C<128>, cute::C<1> >, cute::Layout<cute::C<16>, cute::C<1> > > >, cute::SM100::TMEM::LOAD::SM100_TMEM_LOAD_32dp32b16x, cute::SM90_TMA_LOAD, cute::ComposedLayout<cute::Swizzle<2, 5, 2>, cute::smem_ptr_flag_bits<32>, cute::Layout<cute::tuple<cute::C<32>, cute::C<4> >, cute::tuple<cute::C<1>, cute::C<32> > > >, cute::AutoVectorizingCopyWithAssumedAlignment<128>, cute::SM90_TMA_STORE, cute::ComposedLayout<cute::Swizzle<2, 5, 2>, cute::smem_ptr_flag_bits<32>, cute::Layout<cute::tuple<cute::C<32>, cute::C<4> >, cute::tuple<cute::C<1>, cute::C<32> > > >, cute::AutoVectorizingCopyWithAssumedAlignment<128>, cute::AutoVectorizingCopyWithAssumedAlignment<128> >]
+TRACE_TYPE TileScheduler | void trace_print_type(const char*) [with T = cutlass::gemm::kernel::detail::PersistentTileSchedulerSm100<cute::tuple<cute::C<2>, cute::C<2>, cute::C<1> >, 2>]
+TRACE_TYPE MainloopDispatchPolicy | void trace_print_type(const char*) [with T = cutlass::gemm::MainloopSm100TmaUmmaWarpSpecialized<8, 2, 4, cute::tuple<cute::C<2>, cute::C<2>, cute::C<1> >, cutlass::arch::Sm100>]
+TRACE_TYPE EpilogueDispatchPolicy | void trace_print_type(const char*) [with T = cutlass::epilogue::Sm100TmaWarpSpecialized<4, 2, 16, true, false>]
+TRACE_TYPE CopyOpT2R | void trace_print_type(const char*) [with T = cute::SM100::TMEM::LOAD::SM100_TMEM_LOAD_32dp32b16x]
+TRACE_TYPE CopyOpG2S | void trace_print_type(const char*) [with T = cute::SM90_TMA_LOAD]
+TRACE_TYPE CopyOpS2G | void trace_print_type(const char*) [with T = cute::SM90_TMA_STORE]
+TRACE_TYPE CopyOpS2R | void trace_print_type(const char*) [with T = cute::AutoVectorizingCopyWithAssumedAlignment<128>]
+TRACE_TYPE CopyOpR2S | void trace_print_type(const char*) [with T = cute::AutoVectorizingCopyWithAssumedAlignment<128>]
+TRACE_TYPE GmemTiledCopyA | void trace_print_type(const char*) [with T = cute::SM100_TMA_2SM_LOAD_MULTICAST]
+TRACE_TYPE GmemTiledCopyB | void trace_print_type(const char*) [with T = cute::SM100_TMA_2SM_LOAD]
+TRACE_TYPE MainloopPipeline | void trace_print_type(const char*) [with T = cutlass::PipelineTmaUmmaAsync<8, cute::tuple<cute::C<2>, cute::C<2>, cute::C<1> >, cute::tuple<cute::C<2>, cute::C<1>, cute::C<1> > >]
+TRACE_TYPE AccumulatorPipeline | void trace_print_type(const char*) [with T = cutlass::PipelineUmmaAsync<4, cute::tuple<cute::C<2>, cute::C<1>, cute::C<1> > >]
+TRACE_TYPE CLCPipeline | void trace_print_type(const char*) [with T = cutlass::PipelineCLCFetchAsync<2, cute::tuple<cute::C<2>, cute::C<2>, cute::C<1> > >]
+TRACE_TYPE CLCThrottlePipeline | void trace_print_type(const char*) [with T = cutlass::PipelineAsync<2>]
+TRACE_TYPE EpiLoadPipeline | void trace_print_type(const char*) [with T = cutlass::PipelineTransactionAsync<4>]
+TRACE_TYPE EpiStorePipeline | void trace_print_type(const char*) [with T = cutlass::PipelineTmaStore<4, 1>]
+TRACE_HOST sizeof_SharedStorage 230400
+TRACE_HOST SharedStorageSize 230400
+TRACE_HOST alignof_SharedStorage 512
+TRACE_HOST sizeof_PipelineStorage 352
+TRACE_HOST sizeof_TensorStorage 229888
+TRACE_HOST sizeof_EpilogueSharedStorage 33792
+TRACE_HOST sizeof_Params 2048
+TRACE_HOST sizeof_MainloopParams 1152
+TRACE_HOST sizeof_EpilogueParams 640
+TRACE_HOST sizeof_TileSchedulerParams 56
+TRACE_HOST MaxThreadsPerBlock 256
+TRACE_HOST MinBlocksPerMultiprocessor 1
+TRACE_HOST NumEpilogueSubTiles 8
+TRACE_HOST CLCResponseSize 16
+TRACE_HOST SchedulerPipelineStageCount 2
+TRACE_HOST AccumulatorPipelineStageCount 4
+TRACE_HOST IsOverlappingAccum 0
+TRACE_HOST IsGdcEnabled_host_view 0
+TRACE_HOST off_pipelines 0
+TRACE_HOST off_mainloop 0
+TRACE_HOST off_mainloop_full0 0
+TRACE_HOST off_mainloop_empty0 64
+TRACE_HOST off_epi_load 128
+TRACE_HOST off_epi_load_full0 128
+TRACE_HOST off_epi_load_empty0 160
+TRACE_HOST off_load_order 192
+TRACE_HOST off_load_order_b00 192
+TRACE_HOST off_load_order_b01 200
+TRACE_HOST off_clc 208
+TRACE_HOST off_clc_full0 208
+TRACE_HOST off_clc_empty0 224
+TRACE_HOST off_accumulator 240
+TRACE_HOST off_accumulator_full0 240
+TRACE_HOST off_accumulator_empty0 272
+TRACE_HOST off_clc_throttle 304
+TRACE_HOST off_clc_throttle_full0 304
+TRACE_HOST off_clc_throttle_empty0 320
+TRACE_HOST off_tmem_dealloc 336
+TRACE_HOST off_clc_response0 352
+TRACE_HOST off_clc_response1 368
+TRACE_HOST off_tmem_base_ptr 384
+TRACE_HOST off_tensors 512
+TRACE_HOST off_tensors_epilogue 512
+TRACE_HOST off_smem_C 512
+TRACE_HOST off_smem_D 512
+TRACE_HOST off_epilogue_thread 33280
+TRACE_HOST off_tensors_mainloop 33792
+TRACE_HOST off_smem_A 33792
+TRACE_HOST off_smem_B 164864
+TRACE_TMAP A 000001000d600000 0000040000246320 0000000000000000 0000000000000000 00001fff00001fff 0000000000000000 3f00000000000000 000000000000003f 0000000000002000 0000000000000400 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+TRACE_TMAP B 0000010015600000 0000040000246320 0000000000000000 0000000000000000 00001fff00001fff 0000000000000000 3f00000000000000 000000000000003f 0000000000002000 0000000000000400 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+TRACE_TMAP A_fallback 000001000d600000 0000040000246320 0000000000000000 0000000000000000 00001fff00001fff 0000000000000000 3f00000000000000 000000000000003f 0000000000002000 0000000000000400 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+TRACE_TMAP B_fallback 0000010015600000 0000040000246320 0000000000000000 0000000000000000 00001fff00001fff 0000000000000000 3f00000000000000 000000000000003f 0000000000002000 0000000000000400 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+TRACE_TMAP C 00007c7fc0000000 00000800002c63a0 0000000000000000 0000000000000000 00001fff00001fff 0000000000000000 1f00000000000000 000000000000000f 0000000000000800 0000000000000400 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+TRACE_TMAP D 00007c7fd0000000 00000800002c63a0 0000000000000000 0000000000000000 00001fff00001fff 0000000000000000 1f00000000000000 000000000000000f 0000000000000800 0000000000000400 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+TRACE_H2 tma_load_a Copy_Atom
+  ThrID:        _2:_1
+  ValLayoutSrc: (_2,_8192):(_8192,_1)
+  ValLayoutDst: (_2,_8192):(_8192,_1)
+  ValLayoutRef: (_2,_8192):(_8192,_1)
+  ValueType:    16b
+
+TRACE_H2 tma_load_b Copy_Atom
+  ThrID:        _2:_1
+  ValLayoutSrc: (_2,_4096):(_4096,_1)
+  ValLayoutDst: (_2,_4096):(_4096,_1)
+  ValLayoutRef: (_2,_4096):(_4096,_1)
+  ValueType:    16b
+
+TRACE_H2 tma_load_c TiledCopy
+  Tiler_MN:       (_128,_16)
+  TiledLayout_TV: (_1,(((_32,_16),_4))):(_0,(((_1,_128),_32)))
+Copy_Atom
+  ThrID:        _1:_0
+  ValLayoutSrc: (_1,_512):(_0,_1)
+  ValLayoutDst: (_1,_512):(_0,_1)
+  ValLayoutRef: (_1,_512):(_0,_1)
+  ValueType:    32b
+
+TRACE_H2 tma_store_d TiledCopy
+  Tiler_MN:       (_128,_16)
+  TiledLayout_TV: (_1,(((_32,_16),_4))):(_0,(((_1,_128),_32)))
+Copy_Atom
+  ThrID:        _1:_0
+  ValLayoutSrc: (_1,_512):(_0,_1)
+  ValLayoutDst: (_1,_512):(_0,_1)
+  ValLayoutRef: (_1,_512):(_0,_1)
+  ValueType:    32b
+
+TRACE_HOST scheduler_problem_tiles 32 32 1
+TRACE_HOST scheduler_cluster_divisors 2 2
+TRACE_HOST scheduler_swizzle_divisor 0
+TRACE_HOST scheduler_raster_order AlongN 1
+TRACE_HOST scheduler_log_swizzle_size 0
+TRACE_HOST grid 64 64 1
+TRACE_HOST block 256 1 1
+TRACE_HOST driver_version 13030
+TRACE_HOST runtime_version 13030
+TRACE_HOST macro_NDEBUG 1
+TRACE_HOST macro_CUDA_API_PER_THREAD_DEFAULT_STREAM 0
+TRACE_HOST macro_CUTLASS_ENABLE_DIRECT_CUDA_DRIVER_CALL 0
+TRACE_HOST macro_CUTLASS_ENABLE_GDC_FOR_SM100 1
+TRACE_HOST macro_CUTLASS_ENABLE_SYNCLOG 0
+TRACE_HOST macro_CUTLASS_ENABLE_CUDA_HOST_ADAPTER 1
+TRACE_HOST macro_CUTLASS_DEBUG_TRACE_LEVEL 0
+TRACE_HOST nvcc_version 13 3 73
+TRACE_HOST host_probes_done 1
+TRACE_HOST cudaGetLastError 0 no error
+TRACE_HOST kernel_maxDynamicSharedSizeBytes 230400
+TRACE_HOST kernel_sharedSizeBytes 0
+TRACE_HOST kernel_constSizeBytes 0
+TRACE_HOST kernel_localSizeBytes 0
+TRACE_HOST kernel_numRegs 72
+TRACE_HOST kernel_maxThreadsPerBlock 256
+TRACE_HOST kernel_ptxVersion 100
+TRACE_HOST kernel_binaryVersion 100
+TRACE_HOST kernel_nonPortableClusterSizeAllowed 1
+TRACE_HOST kernel_clusterDimMustBeSet 0
+TRACE_HOST kernel_requiredClusterDims 0 0 0
+TRACE_HOST max_active_clusters 33 ok
+TRACE_HOST device_name NVIDIA B200
+TRACE_HOST device_sm_count 148
+TRACE_HOST device_reserved_smem_per_block 1024
+TRACE_HOST device_max_smem_per_block_optin 232448
+TRACE_HOST device_cluster_launch 1
+TRACE_HOST device_compute_capability 10 0
+TRACE_HOST post_run_done 1
+TRACE_HOST trace_seq_0 0
+TRACE_HOST trace_seq_1 4
+TRACE_HOST trace_seq_2 264
+TRACE_HOST trace_seq_3 34
+TRACE_HOST trace_seq_4 132
+TRACE_HOST trace_seq_5 260
+TRACE_HOST trace_seq_6 0
+TRACE_HOST trace_seq_7 1024
+TRACE_HOST trace_seq_8 1024
+TRACE_HOST trace_seq_9 4096
+TRACE_HOST trace_seq_10 32
+TRACE_HOST trace_seq_11 4
+TRACE_HOST trace_seq_12 0
+TRACE_HOST trace_seq_13 1518
+TRACE_HOST trace_seq_14 0
+TRACE_HOST trace_seq_15 0
+TRACE_HOST trace_records 8382
+TRACE_HOST trace_dump launch0.csv
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 1.13341 ms
+  GFLOPS: 970091

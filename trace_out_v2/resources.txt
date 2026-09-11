@@ -1,0 +1,52 @@
+
+Fatbin ptx code:
+================
+arch = sm_100a
+code version = [9,3]
+host = linux
+compile_size = 64bit
+compressed
+ptxasOptions = 
+
+Fatbin elf code:
+================
+arch = sm_100a
+code version = [1,8]
+host = linux
+compile_size = 64bit
+
+Resource usage:
+ Common:
+  GLOBAL:218060 CONSTANT[4]:160 CONSTANT[3]:72
+ Function _ZN7cutlass9reference6device6kernel17BlockCompareEqualIfEEvPiPKT_S7_m:
+  REG:10 STACK:0 SHARED:1024 LOCAL:0 CONSTANT[0]:928 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _ZN7cutlass9reference6device6kernel4GemmINS_9TensorRefINS_6half_tENS_6layout8RowMajorEEENS4_IS5_NS6_11ColumnMajorEEENS4_IfS9_EEffNS_11MatrixShapeILi4ELi4EEENS_12multiply_addIfffEENS_16NumericConverterIffLNS_15FloatRoundStyleE2EEEEEvNS_4gemm9GemmCoordET2_T_T0_SL_T1_SO_T3_:
+  REG:64 STACK:0 SHARED:1024 LOCAL:0 CONSTANT[0]:988 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _ZN7cutlass9reference6device6kernel12BlockForEachIfNS1_6detail17RandomUniformFuncIfEEEEvPT_mNT0_6ParamsE:
+  REG:34 STACK:0 SHARED:1024 LOCAL:0 CONSTANT[0]:960 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _ZN7cutlass9reference6device6kernel12BlockForEachINS_6half_tENS1_6detail17RandomUniformFuncIS4_EEEEvPT_mNT0_6ParamsE:
+  REG:34 STACK:0 SHARED:1024 LOCAL:0 CONSTANT[0]:960 TEXTURE:0 SURFACE:0 SAMPLER:0
+ Function _ZN7cutlass13device_kernelINS_4gemm6kernel13GemmUniversalIN4cute5tupleIJiiiiEEENS1_10collective13CollectiveMmaINS1_35MainloopSm100TmaUmmaWarpSpecializedILi8ELi2ELi4ENS5_IJNS4_1CILi2EEESB_NSA_ILi1EEEEEENS_4arch5Sm100EEENS5_IJNSA_ILi256EEENSA_ILi128EEENSA_ILi64EEEEEENS_6half_tENS5_IJlSC_lEEESL_SM_NS4_8TiledMMAINS4_8MMA_AtomIJNS4_26SM100_MMA_F16BF16_2x1SM_SSISL_SL_fLi256ELi128ELNS4_4UMMA5MajorE0ELSR_0ELNSQ_7ScaleInE0ELSS_0EEEEEENS4_6LayoutINS5_IJSC_SC_SC_EEENS5_IJNSA_ILi0EEESX_SX_EEEEENS5_IJNS4_10UnderscoreES10_S10_EEEEENS4_28SM100_TMA_2SM_LOAD_MULTICASTENS4_14ComposedLayoutINS4_7SwizzleILi3ELi4ELi3EEENS4_18smem_ptr_flag_bitsILi16EEENSV_INS5_IJNSA_ILi8EEESJ_EEENS5_IJSJ_SC_EEEEEEEvNS4_8identityENS4_18SM100_TMA_2SM_LOADES1D_vS1E_EENS_8epilogue10collective18CollectiveEpilogueINS1H_23Sm100TmaWarpSpecializedILi4ELi2ELi16ELb1ELb0EEEJNS5_IJSI_SI_SJ_EEENS5_IJNSV_ISI_SC_EENSV_INSA_ILi16EEESC_EEEEEfNS5_IJSC_llEEEfS1R_NS1H_6fusion15FusionCallbacksIS1L_NS1S_17LinearCombinationIffffLNS_15FloatRoundStyleE2EEES1M_S1Q_JEEENS4_5SM1004TMEM4LOAD26SM100_TMEM_LOAD_32dp32b16xENS4_13SM90_TMA_LOADENS14_INS15_ILi2ELi5ELi2EEENS17_ILi32EEENSV_INS5_IJNSA_ILi32EEENSA_ILi4EEEEEENS5_IJSC_S25_EEEEEEENS4_39AutoVectorizingCopyWithAssumedAlignmentILi128EEENS4_14SM90_TMA_STOREES2A_S2C_S2C_EEEvvEEEEvNT_6ParamsE:
+  REG:68 STACK:0 SHARED:1024 LOCAL:0 CONSTANT[0]:2944 TEXTURE:0 SURFACE:0 SAMPLER:0
+
+Fatbin ptx code:
+================
+arch = sm_100a
+code version = [9,3]
+host = linux
+compile_size = 64bit
+compressed
+ptxasOptions = 
+
+Fatbin elf code:
+================
+arch = sm_100a
+code version = [1,8]
+host = linux
+compile_size = 64bit
+
+Resource usage:
+ Common:
+  GLOBAL:10 CONSTANT[4]:80
+ Function _ZN13explicit_gemm35explicit_blackwell_fp16_gemm_kernelENS_18ExplicitGemmParamsE:
+  REG:26 STACK:0 SHARED:1024 LOCAL:0 CONSTANT[2]:12 CONSTANT[0]:1536 TEXTURE:0 SURFACE:0 SAMPLER:0

@@ -1,0 +1,102 @@
+== PTX inventory (E.7.4; exact contract unless marked soft) ==
+INFO ptx_instructions: 1553 instruction lines
+PASS tcgen05.mma: 4 expected 4
+PASS tcgen05.commit: 2 expected 2
+PASS tcgen05.ld.32x32b.x16: 8 expected 8
+PASS tcgen05.wait::ld: 1 expected 1
+PASS tcgen05.alloc: 1 expected 1
+PASS tcgen05.dealloc: 1 expected 1
+PASS tcgen05.relinquish: 1 expected 1
+PASS tma_load_A_multicast: 2 expected 2
+PASS tma_load_B: 2 expected 2
+PASS tma_load_C (beta != 0, must be absent): 0 expected 0
+PASS tma_store_D: 32 expected 32
+PASS commit_group: 8 expected 8
+PASS wait_group.read 1: 8 expected 8
+PASS wait_group.read 0 (must be absent): 0 expected 0
+PASS clc.try_cancel: 1 expected 1
+PASS griddepcontrol.wait: 2 expected 2
+PASS griddepcontrol.launch_dependents: 1 expected 1
+PASS prefetch.tensormap: 4 expected 4
+PASS mbarrier.init: 33 expected 33
+PASS arrive.expect_tx local: 2 expected 2
+PASS arrive.expect_tx remote: 1 expected 1
+PASS fence.mbarrier_init: 4 expected 4
+PASS barrier.cluster.arrive.relaxed: 1 expected 1
+PASS barrier.cluster.wait: 1 expected 1
+PASS bar.sync: 17 expected 17
+PASS bar.arrive: 1 expected 1
+PASS mul.f32: 128 expected 128
+PASS fma.rn.f32: 128 expected 128
+PASS add.f32 (must be absent): 0 expected 0
+PASS st.shared.b32: 128 expected 128
+PASS generic st.b32/u32/f32 (must be absent): 0 expected 0
+PASS mbarrier.test_wait: 2 expected 2
+PASS elect.sync (>= 9): 14
+PASS clc.decode_sites: is_canceled 4, get_first_ctaid 4 (one pair per inlined clc_consume)
+PASS ld.shared.b128 = decode sites: 4 vs 4
+PASS fence.proxy.async = 8 + decode sites: 12 expected 12
+PASS mbarrier.try_wait sites: 34 (peeks + blocking-wait sites; baseline 64 incl. the C path)
+PASS mapa.shared::cluster: 8 (consume sites + throttle release + 2 handshake arrivals + CLC arming; baseline 26 incl. the C path)
+PASS peer-bit mask and.b32 -16777224: 1 sites (0xFEFFFFF8 folded, or 0xFEFFFFFF)
+PASS 16-bit mask registers (.b16 %rs): 4 instructions carry a %rs mask operand
+PASS absent: cp.async.ca/cg: 0
+PASS absent: wgmma: 0
+PASS absent: st.global: 0
+PASS absent: atom: 0
+PASS absent: trap: 0
+PASS absent: ld.global: 0
+PASS absent: ld.local/st.local: 0
+PASS absent: stmatrix/ldmatrix: 0
+PASS absent: tcgen05.fence: 0
+INFO ld.param: 2 (k, alpha, beta; the map addresses are param-space constants)
+PASS mov.b32 expect_tx 49152: 2 materialisations
+PASS mov.b32 expect_tx 16: 1 materialisations
+PASS mov.b32 bar.sync thread count 128: 9 materialisations
+PASS mov.b32 bar count 160: 2 materialisations
+PASS mov.b32 suspend hint 0x989680: 16 materialisations
+PASS mov.b32 idesc 0x10200010: 4 materialisations
+PASS mov.b32 tmem columns 512: 2 materialisations
+PASS mov.b32 CLC empty count 800: 1 materialisations
+PASS mov.b32 acc empty count 256: 1 materialisations
+== SASS executed-path inventory (E.7.4 / D.7) ==
+INFO sass_instructions: 1640 (baseline 3224 incl. the C path)
+PASS UTCHMMA.2CTA: 4 expected 4
+PASS UTCBAR.2CTA.MULTICAST: 2 expected 2
+PASS UTMASTG.3D: 32 expected 32
+PASS UTMACMDFLUSH: 8 expected 8
+PASS DEPBAR.LE SB0, 0x1: 8 expected 8
+PASS DEPBAR.LE SB0, 0x0 (must be absent): 0 expected 0
+PASS LDTM.x16: 8 expected 8
+PASS UGETNEXTWORKID.BROADCAST: 1 expected 1
+PASS PREEXIT: 1 expected 1
+PASS FFMA: 128 expected 128
+PASS FADD (must be absent): 0 expected 0
+PASS LDL (must be absent): 0 expected 0
+PASS STL (must be absent): 0 expected 0
+PASS UTMALDG.3D.MULTICAST.2CTA: 2 expected 2
+PASS UTMALDG.3D.2CTA: 2 expected 2
+PASS plain UTMALDG.3D (C load, must be absent): 0 expected 0
+PASS UTMACCTL.PF: 4 expected 4
+PASS ACQBULK: 2 expected 2
+PASS UTCATOMSWS.AND (dealloc): 1 expected 1
+PASS SYNCS.EXCH.64 (mbarrier.init): 33 expected 33
+PASS BAR.SYNC.DEFER_BLOCKING 0x1, 0x80: 16 expected 16
+PASS BAR.SYNC.DEFER_BLOCKING 0x6, 0xa0: 1 expected 1
+PASS BAR.ARV 0x6, 0xa0: 1 expected 1
+PASS BPT.TRAP (ptxas dealloc checks): 2 expected 2
+PASS FMUL 128 (+ up to 2 from the %cluster_ctaid lowering): 130
+PASS STS 128 (+ up to 3 bookkeeping): 131
+PASS UTCATOMSWS.2CTA.FIND_AND_SET (alloc, >= 1): 2 (baseline 2: ptxas retry copy)
+PASS 0xfefffff8 peer mask present: 1
+PASS UPRMT ... 0x5410 (16-bit mask insert): 2
+INFO LDS.128 (CLC decodes): 4
+INFO MOV.SPILL + R2UR.FILL (uniform-to-vector moves; baseline 44 + 44): 0
+INFO EXIT (excluding PREEXIT; baseline 8): 6
+INFO NANOSLEEP (wait retry loops + alloc retry; baseline 53): 31
+INFO ELECT (baseline 5; none expected inside the hot loops): 4
+PASS no ELECT around the four UTCHMMA: 0 ELECT in the MMA window
+PASS UTCBAR follows the fourth UTCHMMA: within 3 instructions
+== resource usage (E.8 D1/D2) ==
+FAIL resources_line_parsed: _ZN13explicit_gemm35explicit_blackwell_fp16_gemm_kernelENS_18ExplicitGemmParamsE:   [target: E.7.4]
+== SUMMARY: 89 PASS, 1 FAIL (hard), 0 WARN (soft) ==

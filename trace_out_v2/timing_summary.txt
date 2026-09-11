@@ -1,0 +1,4 @@
+explicit  : n=5 dispositions=['Passed', 'Passed', 'Passed', 'Passed', 'Passed'] min=0.888947 median=0.889354 max=0.890307
+pristine  : n=5 dispositions=['Passed', 'Passed', 'Passed', 'Passed', 'Passed'] min=0.888653 median=0.889917 max=0.890288
+ratio explicit/pristine medians = 0.99937 -> ACCEPT (<= +0.2%) (E.8 C2)
+same-day pristine median vs 2026-09-09 median 0.888659: 1.00142 (gate +-0.3%, E.8 C3)

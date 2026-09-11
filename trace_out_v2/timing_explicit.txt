@@ -1,0 +1,20 @@
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.889261 ms
+  GFLOPS: 1.23643e+06
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.890307 ms
+  GFLOPS: 1.23498e+06
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.888947 ms
+  GFLOPS: 1.23687e+06
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.889517 ms
+  GFLOPS: 1.23608e+06
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.889354 ms
+  GFLOPS: 1.2363e+06
