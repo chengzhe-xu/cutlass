@@ -2,10 +2,16 @@
  * De-abstraction trace infrastructure for examples/70_blackwell_gemm
  * (Part C of examples/70_blackwell_gemm/Semantics-preserving-de-abstraction.md).
  *
- * Included by 70_blackwell_fp16_gemm.cu BEFORE any CUTLASS header, and only when
- * CUTLASS_DEABSTRACTION_TRACE is defined by the one-line toggle at the top of the example.
- * The guarded probe blocks inside include/cute and include/cutlass reference the macros and
- * symbols declared here.  With the toggle off nothing in this file is compiled.
+ * Included by 70_blackwell_fp16_gemm.cu and 70_blackwell_fp16_gemm_explicit.cu BEFORE any CUTLASS header, and
+ * only when CUTLASS_DEABSTRACTION_TRACE is defined by the one-line toggle on line 1 of
+ * 70_blackwell_fp16_gemm_explicit_util.hpp (Part E).  The guarded probe blocks inside include/cute and
+ * include/cutlass reference the macros and symbols declared here.  With the toggle off nothing in this file is
+ * compiled.
+ *
+ * Two translation units (Part E, E.7.3): the device globals are `static __device__` and the host functions that
+ * touch them are `static inline`, so every TU owns a private copy (no -rdc).  Recording, K0 and the dump run in the
+ * kernel TU (explicit_gemm::trace_begin / trace_end); the harness TU's copies serve only the guarded blocks inside
+ * the never-launched CUTLASS kernel.
  **************************************************************************************************/
 #pragma once
 
@@ -49,6 +55,10 @@ static_assert(sizeof(TraceRec) == 128, "TraceRec must be 128 bytes");
 //                  swizzled M_idx, swizzled N_idx
 //  K_PROBE0 (K0) : v9 = 0: smem base, mapa(base, rank ^ 1), mapa(base, 0), base & 0xFEFFFFFF, cluster_ctaid.x, cluster_ctaid.y, smid
 //                  v9 = 1: tmem base returned by tcgen05.alloc, rank, smem base
+//  K_TAIL   (E.7.3, explicit kernel only): tail site id (TAIL_MAINLOOP 10, TAIL_ACC 11, TAIL_CLC 12, WAIT_TMEM_DEALLOC 9),
+//                  pipeline index and parity of the wait that just completed (recorded after the wait returns and BEFORE the
+//                  state advance; check_trace.py k_tail_mainloop_parity expects v2 == 1 for every mainloop step), tile counter;
+//                  one record per completed tail step, lane 0 (WAIT_TMEM_DEALLOC records idx = phase = 0)
 enum TraceKind : uint32_t {
   K_SMEM = 1,
   K_TMEM = 2,
@@ -61,16 +71,17 @@ enum TraceKind : uint32_t {
   K_CLC_MMA = 9,
   K_PROBE0 = 10,
   K_SMEM2 = 11,
+  K_TAIL = 13,
   K_COUNT = 16
 };
 
 constexpr uint32_t kTraceCapacity = 1u << 16;   // 65536 records = 8 MiB
 
-__device__ TraceRec g_trace_buf[kTraceCapacity];
-__device__ uint32_t g_trace_next = 0;      // number of records appended
-__device__ uint32_t g_trace_enabled = 0;   // 1 between trace_reset() and trace_disable()
-__device__ uint32_t g_trace_seq[K_COUNT] = {};   // per-kind counters (count every event until the kind's cap is reached)
-__device__ uint32_t g_trace_full[K_COUNT] = {};  // set to 1 once a kind reached its cap: later events skip the atomics (a stale 0 only costs one more atomic)
+static __device__ TraceRec g_trace_buf[kTraceCapacity];   // static: one private copy per translation unit (E.7.3)
+static __device__ uint32_t g_trace_next = 0;      // number of records appended
+static __device__ uint32_t g_trace_enabled = 0;   // 1 between trace_reset() and trace_disable()
+static __device__ uint32_t g_trace_seq[K_COUNT] = {};   // per-kind counters (count every event until the kind's cap is reached)
+static __device__ uint32_t g_trace_full[K_COUNT] = {};  // set to 1 once a kind reached its cap: later events skip the atomics (a stale 0 only costs one more atomic)
 
 // Host-side counter for the encoder probe H2b (include/cute/atom/copy_traits_sm90_tma.hpp)
 inline int g_trace_encode_count = 0;
@@ -163,7 +174,8 @@ inline void trace_check(cudaError_t e, char const* what) {
 }
 
 // Clear the buffer and counters and enable recording (call before the launch to be traced).
-inline void trace_reset() {
+// static: operates on the calling translation unit's buffer (E.7.3).
+static inline void trace_reset() {
   trace_check(cudaDeviceSynchronize(), "trace_reset sync");
   uint32_t zero = 0, one = 1;
   uint32_t zeros[K_COUNT] = {};
@@ -174,7 +186,7 @@ inline void trace_reset() {
 }
 
 // Stop recording (call before the timed launches so they run without probe traffic).
-inline void trace_disable() {
+static inline void trace_disable() {
   trace_check(cudaDeviceSynchronize(), "trace_disable sync");
   uint32_t zero = 0;
   trace_check(cudaMemcpyToSymbol(g_trace_enabled, &zero, sizeof(zero)), "trace_disable");
@@ -182,7 +194,7 @@ inline void trace_disable() {
 
 // Write all records to `path` as CSV; the per-kind counters go to stdout as TRACE_HOST lines and as '#' comment
 // lines at the top of the CSV.
-inline void trace_dump(char const* path) {
+static inline void trace_dump(char const* path) {
   trace_check(cudaDeviceSynchronize(), "trace_dump sync");
   uint32_t n = 0;
   uint32_t seq[K_COUNT] = {};

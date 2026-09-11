@@ -1,4 +1,4 @@
-// #define CUTLASS_DEABSTRACTION_TRACE 1  // De-abstraction trace toggle (Part C of Semantics-preserving-de-abstraction.md): uncomment, rebuild with the unchanged cmake command, run the fixed command once; re-comment for the performance binary.
+#include "70_blackwell_fp16_gemm_explicit_util.hpp"   // line 1 of this header is the de-abstraction trace toggle (Part E.2.3 of Semantics-preserving-de-abstraction.md)
 #if defined(CUTLASS_DEABSTRACTION_TRACE)
 #include "deabstraction_trace.hpp"
 #endif
@@ -85,6 +85,7 @@
 #include "cutlass/util/reference/device/tensor_fill.h"
 
 #include "helper.h"
+#include "70_blackwell_fp16_gemm_explicit.hpp"
 #if defined(CUTLASS_DEABSTRACTION_TRACE)
 #include "deabstraction_trace_probes.hpp"
 #endif
@@ -386,8 +387,8 @@ int run(Options &options)
   initialize(options);
 
 #if defined(CUTLASS_DEABSTRACTION_TRACE)
-  trace_reset();             // records from here on: K0 probe kernel, then the warm-up GEMM launch
-  trace_probe_kernel_k0();   // C.4.2: addresses, mapa, TMEM base without any CUTLASS kernel code
+  // E.7.3: recording lives in the kernel TU: reset its buffer, run the K0 probe kernel (C.4.2), sentinel-fill D (E.7.2 B3)
+  explicit_gemm::trace_begin(block_D.get(), block_D.size() * sizeof(typename Gemm::EpilogueOutputOp::ElementOutput));
 #endif
 
   // Instantiate CUTLASS kernel depending on templates
@@ -412,15 +413,14 @@ int run(Options &options)
 #endif
 
   // Correctness / Warmup iteration
-  CUTLASS_CHECK(gemm.run());
+  CUTLASS_CHECK(explicit_gemm::run(gemm));
 
   // Check if output from CUTLASS kernel and reference kernel are equal or not
   Result result;
   result.passed = verify(options);
 #if defined(CUTLASS_DEABSTRACTION_TRACE)
-  trace_host_post_run<Gemm>();     // C.4.1: H3 launch attributes and occupancy
-  trace_dump("launch0.csv");      // K0 + warm-up launch records
-  trace_disable();                 // the 10 timed launches run without probe traffic
+  // E.7.3: H3 on the explicit kernel, dump of K0 + warm-up records, disable before the timed launches; B4 mismatch dump if the compare failed
+  explicit_gemm::trace_end("launch0.csv", result.passed, block_D.get(), block_ref_D.get(), options.m, options.n);
 #endif
 
   std::cout << "  Disposition: " << (result.passed ? "Passed" : "Failed") << std::endl;
@@ -436,7 +436,7 @@ int run(Options &options)
     timer.start();
     for (int iter = 0; iter < options.iterations; ++iter) {
       CUTLASS_CHECK(gemm.initialize(arguments, workspace.get()));
-      CUTLASS_CHECK(gemm.run());
+      CUTLASS_CHECK(explicit_gemm::run(gemm));
     }
     timer.stop();
 

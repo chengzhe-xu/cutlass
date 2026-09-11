@@ -37,6 +37,7 @@ if(CUTLASS_NVCC_ARCHS MATCHES "100a|100f|101a|101f|103a|103f")
 cutlass_example_add_executable(
   70_blackwell_fp16_gemm
   70_blackwell_fp16_gemm.cu
+  70_blackwell_fp16_gemm_explicit.cu
   TEST_COMMAND_OPTIONS
   TEST_SWIZZLE_1
   TEST_SWIZZLE_2

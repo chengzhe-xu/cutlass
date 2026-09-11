@@ -17,6 +17,13 @@ from collections import defaultdict
 # ---- record kinds (deabstraction_trace.hpp) ----
 K_SMEM, K_TMEM, K_MMA, K_TMA_LOAD, K_TMA_STORE, K_TMA_STORE_LANES = 1, 2, 3, 4, 5, 6
 K_CLC_ISSUE, K_CLC_SCHED, K_CLC_MMA, K_PROBE0, K_SMEM2 = 7, 8, 9, 10, 11
+K_TAIL = 13   # Part E (E.7.3): one record per completed tail step of the explicit kernel
+# WaitSite ids of the explicit kernel (70_blackwell_fp16_gemm_explicit.cu) used in K_TAIL v0
+TAIL_SITE = {9: "WAIT_TMEM_DEALLOC", 10: "TAIL_MAINLOOP", 11: "TAIL_ACC", 12: "TAIL_CLC"}
+# expected K_TAIL records per (rank, site): the mainloop tail (8 empty waits) in every CTA, the CLC tail (2 slots) only in
+# rank 0, the accumulator tail (4 stages) only in the two MMA-leader CTAs, the dealloc handshake wait in every CTA (E.7.3, 7.10);
+# payload v0 = site, v1 = pipeline index waited on, v2 = parity waited on, v3 = tile counter
+TAIL_EXPECT = {0: {10: 8, 12: 2, 11: 4, 9: 1}, 1: {10: 8, 9: 1}, 2: {10: 8, 11: 4, 9: 1}, 3: {10: 8, 9: 1}}
 
 # ---- expected constants (Sections 6.2, 7.6, B.4) ----
 SMEM_TOTAL = 230400
@@ -63,12 +70,17 @@ def load_records(path):
     return recs
 
 
+HANG_LINES = []   # TRACE_HANG / TRACE_HANG_HB lines of the explicit kernel's toggle-on run (E.7.2 B1/B2)
+
+
 def load_host(path):
     host, encodes, tmaps, k0, dev = {}, [], {}, [], {}
     with open(path, errors="replace") as f:
         for line in f:
             line = line.rstrip("\n")
-            if line.startswith("TRACE_HOST "):
+            if line.startswith("TRACE_HANG"):
+                HANG_LINES.append(line)
+            elif line.startswith("TRACE_HOST "):
                 parts = line.split()
                 host[parts[1]] = parts[2:]
             elif line.startswith("TRACE_ENCODE "):
@@ -439,6 +451,42 @@ def main(csv_path, host_path):
     check("device_FEAT_SM100_ALL", dev.get("FEAT_SM100_ALL") == "1" and dev.get("CUDA_ARCH") == "1000", str(dev), "Section 0 (sm_100a)")
     nv = host.get("nvcc_version")
     check("nvcc_13_3", nv is not None and nv[:2] == ["13", "3"], str(nv), "Section 0 (CUDA 13.3)")
+
+    # 7. Part E: the explicit kernel's own records (tails, hang bound, discriminator, parameter block)
+    print("== 7. explicit kernel (Part E: E.7.2, E.7.3) ==")
+    if hval(host, "explicit_trace") is not None:
+        check("explicit_trace_active", hval(host, "explicit_trace") == 1, str(host.get("explicit_trace")), "E.7.3 (records come from the explicit kernel's TU)")
+        print(f"INFO explicit_kernel_name {host.get('explicit_kernel_name')}")
+        print(f"INFO sizeof_ExplicitGemmParams {hval(host, 'sizeof_ExplicitGemmParams')} (expected 576, or 640 if alignof(CUtensorMap) is 128; E.2.2)")
+        check("sizeof_ExplicitGemmParams", hval(host, "sizeof_ExplicitGemmParams") in (576, 640), str(hval(host, "sizeof_ExplicitGemmParams")), "E.2.2")
+        check("no_hang_records", not HANG_LINES, f"{len(HANG_LINES)} TRACE_HANG/TRACE_HANG_HB lines" + ("" if not HANG_LINES else ": " + HANG_LINES[0]), "E.7.2 B1/B2 (a bounded wait expired or the watchdog fired)")
+        tails = by_kind.get(K_TAIL, [])
+        check("k_tail_records_present", bool(tails), f"{len(tails)} K_TAIL records (the CUTLASS kernel never emits kind 13: discriminator)", "E.7.3")
+        if tails:
+            # per (cluster, rank, site) counts; every native cluster must show the E.7.3 per-rank numbers
+            per = defaultdict(int)
+            for r in tails:
+                per[((r["bx"] // 2, r["by"] // 2), r["rank"], r["v"][0])] += 1
+            clusters = sorted({k[0] for k in per})
+            bad = []
+            for cl in clusters:
+                for rank, exp in TAIL_EXPECT.items():
+                    for site, n in exp.items():
+                        got = per.get((cl, rank, site), 0)
+                        if got != n:
+                            bad.append(f"cluster {cl} rank {rank} {TAIL_SITE.get(site, site)}: {got} != {n}")
+                    extra = [k for k in per if k[0] == cl and k[1] == rank and k[2] not in exp]
+                    for k in extra:
+                        bad.append(f"cluster {cl} rank {rank} unexpected site {TAIL_SITE.get(k[2], k[2])}")
+            check("k_tail_per_rank_counts", not bad, "ok" if not bad else "; ".join(bad[:6]), "E.7.3 (rank 0 = 8+2+4+1, rank 1 = 8+1, rank 2 = 8+4+1, rank 3 = 8+1)")
+            check("k_tail_total", len(tails) == 46 * len(clusters), f"{len(tails)} records for {len(clusters)} native clusters (46 each)", "E.7.3")
+            # tail parities: the mainloop tail waits parity 1 on every stage (128 T / 8 = 16 T is even, Section 7.5); the K_TAIL record is
+            # written after the wait returned and before the state advances, so v1/v2 are the index and parity that the step waited on
+            ml = [r for r in tails if r["v"][0] == 10]
+            check("k_tail_mainloop_parity", all(r["v"][2] == 1 for r in ml), f"{sum(1 for r in ml if r['v'][2] != 1)} of {len(ml)} mainloop tail steps waited a parity other than 1", "Section 7.5 / 7.2 (producer_tail parity 1 for every T)")
+        print(f"INFO explicit kernel attributes: numRegs {hval(host, 'kernel_numRegs')} localSizeBytes {hval(host, 'kernel_localSizeBytes')} constSizeBytes {hval(host, 'kernel_constSizeBytes')} (trace build; Release numbers come from cuobjdump, E.7.4)")
+    else:
+        print("INFO no explicit_trace line: host.txt was produced by the pre-Part E harness (CUTLASS kernel traced)")
 
     n_fail = sum(1 for _, ok in results if not ok)
     print(f"== SUMMARY: {len(results) - n_fail} PASS, {n_fail} FAIL ==")

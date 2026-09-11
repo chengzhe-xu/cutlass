@@ -3,9 +3,11 @@
  * (K0), the GDC probe kernel, and the host probes H1/H2/H3/H5 (Part C, C.4.1 and C.4.2 of
  * examples/70_blackwell_gemm/Semantics-preserving-de-abstraction.md).
  *
- * Included by 70_blackwell_fp16_gemm.cu AFTER the CUTLASS headers, only when
- * CUTLASS_DEABSTRACTION_TRACE is defined.  Output lines are prefixed TRACE_* so that check_trace.py
- * can parse them from the captured stdout (host.txt).
+ * Included by 70_blackwell_fp16_gemm.cu AFTER the CUTLASS headers and by 70_blackwell_fp16_gemm_explicit.cu (Part E,
+ * toggle-on only), only when CUTLASS_DEABSTRACTION_TRACE is defined.  The probe kernels and the K0 launcher are
+ * `static` so that each translation unit owns a private copy (no -rdc, E.7.3); K0 is launched from the kernel TU
+ * so that its records land in the buffer the explicit kernel writes.  Output lines are prefixed TRACE_* so that
+ * check_trace.py can parse them from the captured stdout (host.txt).
  **************************************************************************************************/
 #pragma once
 
@@ -27,7 +29,7 @@
 // 230400 bytes of dynamic shared memory, no static shared memory, cluster (2,2,1)) but no CUTLASS
 // kernel code, so the hardware facts of Section B.6 are measured before the real kernel is touched.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-__global__ void __launch_bounds__(256, 1) trace_probe_addr_kernel(int /*unused*/) {
+static __global__ void __launch_bounds__(256, 1) trace_probe_addr_kernel(int /*unused*/) {
   extern __shared__ char trace_probe_smem[];
   uint32_t const rank = cute::block_rank_in_cluster();
   dim3 const cid = cute::block_id_in_cluster();
@@ -61,7 +63,7 @@ __global__ void __launch_bounds__(256, 1) trace_probe_addr_kernel(int /*unused*/
 }
 
 // Device-side view of the build configuration (the GDC flag is arch-dependent and therefore invisible to host code).
-__global__ void trace_probe_gdc_kernel() {
+static __global__ void trace_probe_gdc_kernel() {
   int feat_sm100_all = 0;
 #if defined(__CUDA_ARCH_FEAT_SM100_ALL)
   feat_sm100_all = 1;
@@ -74,7 +76,7 @@ __global__ void trace_probe_gdc_kernel() {
          (int)cutlass::arch::IsGdcGloballyEnabled, feat_sm100_all, cuda_arch);
 }
 
-inline void trace_probe_kernel_k0() {
+static inline void trace_probe_kernel_k0() {
   void const* fn = reinterpret_cast<void const*>(&trace_probe_addr_kernel);
   trace_check(cudaFuncSetAttribute(fn, cudaFuncAttributeMaxDynamicSharedMemorySize, 230400), "K0 cudaFuncSetAttribute smem");
   trace_check(cudaFuncSetAttribute(fn, cudaFuncAttributeNonPortableClusterSizeAllowed, 1), "K0 cudaFuncSetAttribute cluster");
@@ -295,12 +297,10 @@ void trace_host_probes(Gemm const& gemm) {
   std::printf("TRACE_HOST host_probes_done 1\n");
 }
 
-// H3: launch-related facts.  Call after the warm-up gemm.run() and verify(), when both function attributes
-// (MaxDynamicSharedMemorySize from initialize(), NonPortableClusterSizeAllowed from run()) have been set.
-template <class Gemm>
-void trace_host_post_run() {
-  using GemmKernel = typename Gemm::GemmKernel;
-  void const* fn = reinterpret_cast<void const*>(&cutlass::device_kernel<GemmKernel>);
+// H3: launch-related facts of the kernel at `fn`.  Call after the warm-up launch and verify(), when both function
+// attributes (MaxDynamicSharedMemorySize, NonPortableClusterSizeAllowed) have been set on that kernel.  Under Part E
+// `fn` is the explicit kernel (called from explicit_gemm::trace_end in the kernel TU).
+static inline void trace_host_post_run_fn(void const* fn) {
   cudaError_t last = cudaGetLastError();
   std::printf("TRACE_HOST cudaGetLastError %d %s\n", int(last), cudaGetErrorString(last));
   cudaFuncAttributes a;
@@ -354,3 +354,4 @@ void trace_host_post_run() {
   }
   std::printf("TRACE_HOST post_run_done 1\n");
 }
+
