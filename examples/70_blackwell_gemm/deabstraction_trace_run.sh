@@ -17,6 +17,7 @@
 #     explicit_blackwell_fp16_gemm_kernel) and also cuts the CUTLASS kernel (GemmUniversal) that stays in the binary;
 #   - `baseline` interleaves five runs of the new binary with five runs of the pristine baseline binary (E.8 C2-C3);
 #   - `restore` rebuilds toggle-off and proves that the explicit kernel's SASS is identical to the `build` step's (E.8 D6).
+#   - every build's cmake/nvcc output is kept as $TRACE_OUT/build_{trace,build,restore}.log; `baseline` also records the GPU identity.
 set -euo pipefail
 
 : "${CUDACXX:?set CUDACXX to the nvcc of CUDA 13.3}"
@@ -31,10 +32,10 @@ PRISTINE=${PRISTINE_BIN:-$ROOT/trace_out/70_blackwell_fp16_gemm.pristine}   # th
 KNAME=${KNAME:-explicit_blackwell_fp16_gemm_kernel}
 mkdir -p "$OUT"
 
-build() {
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_COMPILER="$CUDACXX" -DCUDAToolkit_ROOT="$CUDA_HOME" \
-        -DCUTLASS_NVCC_ARCHS=100a -DCUTLASS_ENABLE_EXAMPLES=ON -DCUTLASS_ENABLE_TESTS=ON -DCUTLASS_ENABLE_PROFILER=ON \
-    && cmake --build build --target 70_blackwell_fp16_gemm --parallel 16
+build() {   # $1 = step name; the whole cmake/nvcc output is kept in $OUT/build_$1.log (G.6 item 3: -Wconversion warnings, proof of recompilation)
+  { cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_COMPILER="$CUDACXX" -DCUDAToolkit_ROOT="$CUDA_HOME" \
+          -DCUTLASS_NVCC_ARCHS=100a -DCUTLASS_ENABLE_EXAMPLES=ON -DCUTLASS_ENABLE_TESTS=ON -DCUTLASS_ENABLE_PROFILER=ON \
+      && cmake --build build --target 70_blackwell_fp16_gemm --parallel 16; } 2>&1 | tee "$OUT/build_${1:-step}.log"
 }
 run_fixed() { "$BIN" --m=8192 --n=8192 --k=8192; }
 toggle_on()  { sed -i '1s|^// #define CUTLASS_DEABSTRACTION_TRACE 1|#define CUTLASS_DEABSTRACTION_TRACE 1|' "$EX"; }
@@ -55,7 +56,7 @@ trap on_exit EXIT
 step_build() {      # F.5 step 3: toggle-off build of the new source, keep a copy of the binary (never overwrites the baseline pristine)
   toggle_off
   echo "toggle: $(toggle_state)"
-  build
+  build build
   cp "$BIN" "$EXPLICIT_BIN"
   echo "toggle-off explicit binary saved to $EXPLICIT_BIN"
 }
@@ -91,8 +92,8 @@ step_inspect() {    # F.5 step 4 (C.5 step 2): build configuration (B3), resourc
     echo "--- resource usage of the explicit kernel (E.8 D1/D2: LOCAL 0, STACK 0, SHARED 1024; REG <= 68 soft) ---"
     grep -A1 "$KNAME" "$OUT/resources.txt" | grep -E "REG|Function" || true   # the REG/STACK/SHARED/LOCAL line follows the Function line
     echo "--- mnemonic families (explicit kernel only; predicated lines included) ---"
-    for pat in UTC UTMA SYNCS CLC ACQBULK PREEXIT FFMA FMUL FADD 'STS' 'LDS' 'BAR' 'ELECT' 'LDL' 'STL'; do
-      printf "%-10s %s\n" "$pat" "$(grep -c -E "^[[:space:]]*/\*[0-9a-f]+\*/[[:space:]]+(@!?U?PT?[0-9]*[[:space:]]+)?${pat}" "$OUT/sass_explicit.txt" || true)"
+    for pat in UTC UTMA SYNCS UGETNEXTWORKID ACQBULK PREEXIT FFMA FMUL FADD 'STS' 'LDS' 'BAR' 'ELECT' 'LDL' 'STL'; do   # the CLC query is UGETNEXTWORKID in SASS (D.2); no mnemonic contains 'CLC'
+      printf "%-14s %s\n" "$pat" "$(grep -c -E "^[[:space:]]*/\*[0-9a-f]+\*/[[:space:]]+(@!?U?PT?[0-9]*[[:space:]]+)?${pat}" "$OUT/sass_explicit.txt" || true)"
     done
     echo "--- griddepcontrol in the explicit kernel's PTX ---"
     grep -c griddepcontrol "$OUT/ptx_explicit.txt" || true
@@ -110,6 +111,7 @@ step_baseline() {   # F.5 step 5 (E.8 C1-C3): five runs of the new binary interl
     nvidia-smi --query-gpu=timestamp,clocks.sm,clocks.mem,power.draw,temperature.gpu --format=csv -lms 100 > "$OUT/clocks.csv" 2>&1 &
     SMI_PID=$!
   fi
+  { hostname; nvidia-smi --query-gpu=name,uuid,pci.bus_id,driver_version,vbios_version,clocks.max.sm --format=csv; } > "$OUT/gpu_identity.txt" 2>&1 || true   # G.6 item 5: the 2026-09-11 run was on a different GPU than the 2026-09-09 baseline
   : > "$OUT/baseline.txt"
   : > "$OUT/timing_explicit.txt"
   : > "$OUT/timing_pristine.txt"
@@ -152,7 +154,7 @@ PY
 step_trace() {      # F.5 step 1 (C.5 step 4, E.7.2 B5): toggle on, same build command, fixed run command once (hang bound 20 s + hang records)
   toggle_on
   echo "toggle: $(toggle_state)"
-  build
+  build trace
   rm -f launch0.csv
   set +e
   run_fixed 2>&1 | tee "$OUT/host.txt"
@@ -166,7 +168,8 @@ step_trace() {      # F.5 step 1 (C.5 step 4, E.7.2 B5): toggle on, same build c
 step_restore() {    # F.5 step 6 (E.8 D6): toggle off, rebuild, prove that the explicit kernel's SASS equals the `build` step's (binary cmp is not reproducible, D.0)
   toggle_off
   echo "toggle: $(toggle_state)"
-  build
+  touch examples/70_blackwell_gemm/70_blackwell_fp16_gemm.cu examples/70_blackwell_gemm/70_blackwell_fp16_gemm_explicit.cu   # force a real recompile of both TUs (G.6 item 4); the log proves it
+  build restore
   cuobjdump --dump-sass "$BIN" > "$OUT/sass_after.txt" 2>&1 || true
   sass_of_kernel "$OUT/sass_after.txt" "$KNAME" "$OUT/sass_explicit_after.txt"
   if [ -f "$OUT/sass_explicit.txt" ] && diff -q "$OUT/sass_explicit.txt" "$OUT/sass_explicit_after.txt"; then

@@ -488,6 +488,17 @@ def main(csv_path, host_path):
     else:
         print("INFO no explicit_trace line: host.txt was produced by the pre-Part E harness (CUTLASS kernel traced)")
 
+    # 8. trace-infrastructure self-checks (G.6 item 6): properties of the recording, not of the kernel under test; they hold
+    #    for the 2026-09-09 and 2026-09-11 traces and turn the manual checks of the G.8 review into PASS rows
+    print("== 8. trace infrastructure self-checks (G.6) ==")
+    check("all_records_lane0", all(r.get("lane", 0) == 0 for r in recs), f"{sum(1 for r in recs if r.get('lane', 0) != 0)} records with lane != 0", "C.3 (every probe records from lane 0)")
+    n_sm = hval(host, "device_sm_count")
+    check("smid_in_range", n_sm is None or all(0 <= r.get("smid", 0) < n_sm for r in recs), f"smid max {max((r.get('smid', 0) for r in recs), default=-1)}, device_sm_count {n_sm}", "D.3")
+    bad_seq = [k for k, rs in by_kind.items() if sorted(r["seq"] for r in rs) != list(range(len(rs)))]
+    check("seq_contiguous_per_kind", not bad_seq, "ok" if not bad_seq else f"kinds {bad_seq}", "C.3 (per-kind sequence counters; a capped kind stores seq 0..cap-1)")
+    tr = hval(host, "trace_records")
+    check("csv_count_matches_trace_records", tr is None or tr == len(recs), f"{len(recs)} records in the CSV, TRACE_HOST trace_records {tr}", "C.3")
+
     n_fail = sum(1 for _, ok in results if not ok)
     print(f"== SUMMARY: {len(results) - n_fail} PASS, {n_fail} FAIL ==")
     return 1 if n_fail else 0

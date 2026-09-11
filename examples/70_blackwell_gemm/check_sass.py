@@ -130,6 +130,8 @@ def check_ptx(path, base_path):
     report("soft", "mapa.shared::cluster", n_mapa >= 5, f"{n_mapa} (consume sites + throttle release + 2 handshake arrivals + CLC arming; baseline 26 incl. the C path)", "E.7.4")
     peer = ptx_count(instrs, r"and\.b32 .*, -16777224\b|and\.b32 .*, -16777217\b")
     report("hard", "peer-bit mask and.b32 -16777224", peer >= 1, f"{peer} sites (0xFEFFFFF8 folded, or 0xFEFFFFFF)", "D.6 item 2")
+    n_fold = ptx_count(instrs, r"^and\.b32 %r\d+, %r\d+, -16777232;")
+    report("info", "peer-bit mask folded on the hoisted producer base (and.b32 ..., -16777232 = 0xFEFFFFF0)", True, f"{n_fold} sites (G.3: equivalent for the 1024-byte-aligned base and s <= 7; the literal -16777224 survives at the epilogue release)", "")
     h16 = ptx_count(instrs, r"^tcgen05\.commit.*, %rs\d+;|^cp\.async\.bulk\.tensor.*, %rs\d+, %rd\d+;")
     report("soft", "16-bit mask registers (.b16 %rs)", h16 >= 3, f"{h16} instructions carry a %rs mask operand", "7.2")
     for name, rx in PTX_ABSENT:
@@ -245,16 +247,21 @@ def check_resources(path, kname):
     if found is None:
         report("hard", "resources_function_found", False, f"no Function containing {kname} in {path}", "E.7.4")
         return
-    m = re.search(r"REG:(\d+)\s+STACK:(\d+)\s+SHARED:(\d+)\s+LOCAL:(\d+)\s+CONSTANT\[0\]:(\d+)", found)
-    if not m:
+    # key:value pairs in any order (cuobjdump inserts e.g. CONSTANT[2]:12 between LOCAL and CONSTANT[0] when ptxas
+    # emits a jump table; the first build of 2026-09-11 did, G.3)
+    kv = dict((k, int(v)) for k, v in re.findall(r"([A-Z]+(?:\[\d+\])?):(\d+)", found))
+    if not all(k in kv for k in ("REG", "STACK", "SHARED", "LOCAL", "CONSTANT[0]")):
         report("hard", "resources_line_parsed", False, found.strip().split("\n")[0][:120], "E.7.4")
         return
-    reg, stack, shared, local, const0 = (int(v) for v in m.groups())
+    reg, stack, shared, local, const0 = kv["REG"], kv["STACK"], kv["SHARED"], kv["LOCAL"], kv["CONSTANT[0]"]
+    extra = {k: v for k, v in kv.items() if k not in ("REG", "STACK", "SHARED", "LOCAL", "CONSTANT[0]", "TEXTURE", "SURFACE", "SAMPLER")}
+    if extra:
+        report("info", "other resource banks", True, " ".join(f"{k}:{v}" for k, v in extra.items()) + " (CONSTANT[2] = ptxas jump table, G.3)", "")
     report("hard", "LOCAL 0 (no spills)", local == 0, str(local), "E.8 D1")
     report("hard", "STACK 0", stack == 0, str(stack), "E.8 D1")
     report("hard", "SHARED 1024 (system-reserved only; no static __shared__)", shared == 1024, str(shared), "E.8 D1 / D.6 item 4")
     report("soft", "REG <= 68", reg <= 68, f"{reg} (baseline 68; a higher count is a disclosed deviation, E.8 D2)", "D.7")
-    report("info", "CONSTANT[0] = 0x380 + sizeof(ExplicitGemmParams)", True, f"{const0} (896 + 576 = 1472 expected for a 576-byte block; baseline 2944)", "")
+    report("info", "CONSTANT[0] = 0x380 + sizeof(ExplicitGemmParams)", True, f"{const0} (896 + 640 = 1536 for the 640-byte block of CUDA 13.3, alignof(CUtensorMap) 128; 1472 for 576; baseline 2944)", "")
 
 
 def main(argv):
