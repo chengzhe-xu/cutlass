@@ -1,14 +1,17 @@
 # Semantics-preserving de-abstraction of `70_blackwell_fp16_gemm.cu`
 
+**TASK STATUS: COMPLETED (closed by the user on 2026-09-11).** The explicit kernel `explicit_blackwell_fp16_gemm_kernel` and the host function `explicit_gemm::run()` replace the CollectiveBuilder/GemmUniversal GEMM for the fixed use case of Section 0 with value-equal output (`Disposition: Passed` in every run), identical performance (median runtime ratio 0.99937 against the same-day original, E.8 C2 accept) and no high-level abstraction (inline PTX for tcgen05, TMA, mbarrier, CLC and griddepcontrol; CuTe only in compile-time checks and the host bridge). Evidence: Part G; usage: Part H; closure record: Part I. The items listed as open in G.7 and I.3 are optional follow-ups, not conditions of completion.
+
 Task target, equivalence contract, and verified baseline trace.
 
 - Recorded 2026-09-08 and revised the same day for the fixed use case of Section 0: scope narrowed, material duplicated between Part A and Part B merged, and the corrections of three independent source reviews applied (B.8). **2026-09-09: the Part C experiments were run on the B200; Part D holds the measured values, and every `[C]`/`[R]` item of Parts A-B that a measurement or the completed run can settle has been resolved in place; the two `[R]` labels that remain (Section 3: the concrete random fill values; Section 8: the summation order inside one `tcgen05.mma`) and the two runtime facts left open in prose in status cells marked `S` (B.1.2 step 7: whether the host calls of `initialize()` overlap the previous launch, not measured; B.2 step 4: the identity of the elected lane, implementation-defined although measured as lane 0 in all 1184 `elect_one_sync()` records of `trace_out/launch0.csv`) mark runtime facts on which the replacement does not depend** (the corrections the run forced are listed in D.6). **2026-09-10: Part E records the user's file-structure decision and the implementation strategy for the explicit kernel** (three new files, `gemm.run()` replaced by `explicit_gemm::run(gemm)` at both call sites, `gemm.initialize()` kept, one source-list addition in the example's `CMakeLists.txt`); the passages of Parts A, B and D that assumed the replacement re-encodes the tensor maps itself were amended in place with a pointer to E.0. **2026-09-11: the explicit kernel, its host function and the bring-up tooling were written against Parts A-E (Part F records the files, the deviations from Part E as written, and the items that only the first build and run on the B200 can settle; nothing has been compiled on this host).**
 - **2026-09-11**: Part E was implemented (Part F, commit `829f0645`), built and run on the B200 with the F.5 procedure; Part G analyses the results (raw outputs committed in `trace_out_v2/`, commit `1ddd85d0`): value-equal `D`, runtime ratio 0.99937 (E.8 C2 accept), every hard row of E.7.4/E.8 met.
+- **2026-09-11, closure**: the user declared the task completed after Parts G and H; Part I records the final state, the commits and the optional follow-ups.
 - Baseline source: `examples/70_blackwell_gemm/70_blackwell_fp16_gemm.cu`
 - Repository state: CUTLASS v4.7.1, commit `cb4247394dd82148787aed73e5dc7cef33cbf862`. All file:line anchors below refer to this commit.
 - Inspection host for Parts A-C: macOS/arm64 without `nvcc`, without a CUDA driver, and without a build directory; Parts A-C are derived from source. The facts that needed a compiler or a B200 (Section 11) were measured on 2026-09-09 on the target machine (NVIDIA B200, driver 610.57.04, `nvcc` 13.3.73) and are recorded in Part D; the raw outputs are committed in `trace_out/`.
 - `de-abstraction-plan.log` (the earlier draft in this directory) was used only as a checklist. It was treated as untrusted. Section 13 lists where it was wrong or imprecise.
-- How this document is organized: **Part A** (Sections 0-14) is the task target, the equivalence contract and the verified baseline facts; **Part B** is the call-stack and lowering trace of `gemm.run()` down to CuTe formulas and PTX, with the statically undeterminable items collected in B.7; **Part C** is the ready-to-execute plan for the debug-print code and the experiments that settle those items on the B200 under the fixed build and run commands of Section 0 (start at C.5 for the run order); **Part D** holds the measured values of the 2026-09-09 run (D.1 per item, D.2 SASS lowering, D.3 CLC dynamics, D.4 performance baseline, D.5 build facts, D.6 corrections, D.7 targets for the replacement); **Part E** (2026-09-10) is the implementation strategy: the decision (E.0), feasibility and alternatives (E.1), file set (E.2), build integration (E.3), harness edit (E.4), the host function's contract (E.5), the kernel's internal architecture (E.6), bring-up and validation (E.7), acceptance criteria (E.8), risks (E.9) and the decisions left to the user (E.10); **Part F** (2026-09-11) is the implementation record: what was written (F.1), where the code deviates from Part E's letter and why (F.2), what the two review passes found (F.3), what to confirm at the first build and run (F.4), the bring-up procedure (F.5) and the open decisions (F.6). **Part G** is the analysis of the first build and run of that implementation (2026-09-11) against E.7.4, E.8, E.9 and F.4.
+- How this document is organized: **Part A** (Sections 0-14) is the task target, the equivalence contract and the verified baseline facts; **Part B** is the call-stack and lowering trace of `gemm.run()` down to CuTe formulas and PTX, with the statically undeterminable items collected in B.7; **Part C** is the ready-to-execute plan for the debug-print code and the experiments that settle those items on the B200 under the fixed build and run commands of Section 0 (start at C.5 for the run order); **Part D** holds the measured values of the 2026-09-09 run (D.1 per item, D.2 SASS lowering, D.3 CLC dynamics, D.4 performance baseline, D.5 build facts, D.6 corrections, D.7 targets for the replacement); **Part E** (2026-09-10) is the implementation strategy: the decision (E.0), feasibility and alternatives (E.1), file set (E.2), build integration (E.3), harness edit (E.4), the host function's contract (E.5), the kernel's internal architecture (E.6), bring-up and validation (E.7), acceptance criteria (E.8), risks (E.9) and the decisions left to the user (E.10); **Part F** (2026-09-11) is the implementation record: what was written (F.1), where the code deviates from Part E's letter and why (F.2), what the two review passes found (F.3), what to confirm at the first build and run (F.4), the bring-up procedure (F.5) and the open decisions (F.6). **Part G** is the analysis of the first build and run of that implementation (2026-09-11) against E.7.4, E.8, E.9 and F.4. **Part H** is the usage guide: the commands for the full-speed run and for the two kinds of diagnostics (runtime trace, compiled code), and H.4 the legend of the comment layer in the source files. **Part I** is the closure record: deliverables, the acceptance table, optional follow-ups and the boundaries that stay.
 
 Evidence labels used throughout:
 
@@ -1682,9 +1685,9 @@ Part F records what was actually written, where the code departs from the letter
 
 | File (in `examples/70_blackwell_gemm/`) | Lines | Content |
 |---|---|---|
-| `70_blackwell_fp16_gemm_explicit.cu` (new) | ~1300 | Line 1 includes the util header (toggle), then the guarded `deabstraction_trace.hpp`, `<cuda.h>`, `<cuda_runtime.h>`, `cutlass/cutlass.h`, `cute/swizzle.hpp`, the `.hpp`; under the toggle also `deabstraction_trace_probes.hpp` and the standard headers of the diagnostics. Anonymous namespace inside `explicit_gemm`: the E.6.1 constants and Section 6.2 offsets with `static_assert`s (including the D.7 descriptor words and the `cute::Swizzle<2,5,2>` cross-check of the epilogue formula), the trace-only `HangRec`/`WaitSite` definitions and the `EXPLICIT_WAIT` macro, the 37 PTX wrappers of E.6.2 (each `asm` copied from the CUTLASS source named in its comment), `advance<Stages>`, `desc64`, `clc_consume<TraceKind>`, `load_ktiles`, `producer_role`, `scheduler_role`, `mma_role`, `epilogue_role`. Then the one `__global__` kernel `explicit_blackwell_fp16_gemm_kernel(const __grid_constant__ ExplicitGemmParams)` with `__launch_bounds__(256, 1)`, `extern __shared__ char smem[]` (no alignment attribute, no static shared memory) and the E.6.3 prologue + role dispatch; the host function `explicit_gemm::run(ExplicitGemmParams const&)` (E.5.1 guards, then the E.5.2 mirror of `run()`); under the toggle the host entry points `trace_begin`, `trace_end`, the hang/heartbeat report and the B4 mismatch dump |
-| `70_blackwell_fp16_gemm_explicit.hpp` (new) | ~112 | `ExplicitGemmParams` (E.2.2, with the `static_assert`s on `alignof(CUtensorMap) >= 64`, the map offsets, the scalar offsets, `sizeof` 576 or 640), the declaration of `run(ExplicitGemmParams const&)`, the toggle-guarded declarations of `trace_begin`/`trace_end`, the template bridge `make_params(gemm)` / `run(gemm)` |
-| `70_blackwell_fp16_gemm_explicit_util.hpp` (new) | ~54 | Line 1 is the trace toggle (`// #define CUTLASS_DEABSTRACTION_TRACE 1`); Section 0 constants (`kFixedM/N/K/L`, tile/cluster/grid/block/smem sizes, `kProblemTiles*`, `kRasterOrderAlongN = 1`, `kModeGemm = 0`, the D.7 descriptor words) with `static_assert`s; `status_from_cuda` (`cudaSuccess` -> `kSuccess`, else `kInvalid`, as `Return_Status`); the (unused) trace printf macro `EXPLICIT_GEMM_TRACE_PRINTF` (F.2 item 12) |
+| `70_blackwell_fp16_gemm_explicit.cu` (new) | ~1300 (1451 with the H.4 documentation layer) | Line 1 includes the util header (toggle), then the guarded `deabstraction_trace.hpp`, `<cuda.h>`, `<cuda_runtime.h>`, `cutlass/cutlass.h`, `cute/swizzle.hpp`, the `.hpp`; under the toggle also `deabstraction_trace_probes.hpp` and the standard headers of the diagnostics. Anonymous namespace inside `explicit_gemm`: the E.6.1 constants and Section 6.2 offsets with `static_assert`s (including the D.7 descriptor words and the `cute::Swizzle<2,5,2>` cross-check of the epilogue formula), the trace-only `HangRec`/`WaitSite` definitions and the `EXPLICIT_WAIT` macro, the 37 PTX wrappers of E.6.2 (each `asm` copied from the CUTLASS source named in its comment), `advance<Stages>`, `desc64`, `clc_consume<TraceKind>`, `load_ktiles`, `producer_role`, `scheduler_role`, `mma_role`, `epilogue_role`. Then the one `__global__` kernel `explicit_blackwell_fp16_gemm_kernel(const __grid_constant__ ExplicitGemmParams)` with `__launch_bounds__(256, 1)`, `extern __shared__ char smem[]` (no alignment attribute, no static shared memory) and the E.6.3 prologue + role dispatch; the host function `explicit_gemm::run(ExplicitGemmParams const&)` (E.5.1 guards, then the E.5.2 mirror of `run()`); under the toggle the host entry points `trace_begin`, `trace_end`, the hang/heartbeat report and the B4 mismatch dump |
+| `70_blackwell_fp16_gemm_explicit.hpp` (new) | ~112 (134 with H.4) | `ExplicitGemmParams` (E.2.2, with the `static_assert`s on `alignof(CUtensorMap) >= 64`, the map offsets, the scalar offsets, `sizeof` 576 or 640), the declaration of `run(ExplicitGemmParams const&)`, the toggle-guarded declarations of `trace_begin`/`trace_end`, the template bridge `make_params(gemm)` / `run(gemm)` |
+| `70_blackwell_fp16_gemm_explicit_util.hpp` (new) | ~54 (63 with H.4) | Line 1 is the trace toggle (`// #define CUTLASS_DEABSTRACTION_TRACE 1`); Section 0 constants (`kFixedM/N/K/L`, tile/cluster/grid/block/smem sizes, `kProblemTiles*`, `kRasterOrderAlongN = 1`, `kModeGemm = 0`, the D.7 descriptor words) with `static_assert`s; `status_from_cuda` (`cudaSuccess` -> `kSuccess`, else `kInvalid`, as `Return_Status`); the (unused) trace printf macro `EXPLICIT_GEMM_TRACE_PRINTF` (F.2 item 12) |
 | `70_blackwell_fp16_gemm.cu` (edited) | 4 unguarded lines | E.4 exactly: line 1 `#include "70_blackwell_fp16_gemm_explicit_util.hpp"`; `#include "70_blackwell_fp16_gemm_explicit.hpp"` after `#include "helper.h"`; `CUTLASS_CHECK(explicit_gemm::run(gemm));` at the warm-up and in the timed loop. Toggle-guarded blocks re-pointed: `explicit_gemm::trace_begin(block_D.get(), bytes)` where `trace_reset(); trace_probe_kernel_k0();` was, and `explicit_gemm::trace_end("launch0.csv", result.passed, block_D.get(), block_ref_D.get(), options.m, options.n)` where `trace_host_post_run<Gemm>(); trace_dump(...); trace_disable();` was; `trace_host_probes<Gemm>(gemm)` unchanged |
 | `CMakeLists.txt` (edited) | 1 line | `70_blackwell_fp16_gemm_explicit.cu` added to the source list before `TEST_COMMAND_OPTIONS` (E.3.1) |
 | `deabstraction_trace.hpp` (edited) | | Two-TU form (E.7.3): the five device globals `static __device__`, `trace_reset/trace_disable/trace_dump` `static inline`; new kind `K_TAIL = 13` with its payload comment |
@@ -1878,3 +1881,179 @@ None of these touches the kernel, the headers, the harness or the build; nothing
 ## G.8 Review record of this analysis (2026-09-11)
 
 The reading above was produced with one orchestrated workflow of six independent lenses over `trace_out_v2/` and `trace_out/` (trace-record equivalence; SASS of the mainloop, producer, scheduler and prologue; SASS of the epilogue and registers; PTX contract and SASS immediates; E.8/F.4 acceptance and timing; anomaly hunt over every file), each finding above info level then checked by two adversarial verifiers (evidence re-check; significance), 32 agents in all. Outcome: no finding that affects output, performance or the no-abstraction property of the toggle-off binary. Thirteen findings reached verification: eleven survived as documentation or tooling caveats and are folded into G.0-G.7 (build log not captured; D5 soft counts 47/37/37 against 44/31/32 with the +3/+6 attribution corrected by the verifiers; the tolerant `sizeof` assert; the committed `sass_checklist.txt` carrying the parser FAIL; the `CLC 0` label; the different GPU; the missing-evidence list; the artefact provenance), one was refuted (a claimed dangling `G.3` reference in `check_sass.py`: the section exists in this document), one was demoted to cosmetic (the MMA loop's +3). Independent recounts by the lenses reproduced every E.7.4 row and every timing statistic quoted here; the trace-equivalence lens ran 93 checks with 0 FAIL, and the epilogue lens verified the 16384 store addresses and the scoreboard control words. The workflow's raw results are kept outside the repository (session scratchpad `wf6/first_run_analysis.json`).
+
+---
+
+# Part H. Usage: running the explicit kernel and obtaining its diagnostics
+
+Two workflows, both built from the fixed Section 0 build and run commands. Everything below is executed from the repository root on the B200 with `CUDACXX` and `CUDA_HOME` pointing at the CUDA 13.3 toolkit (D.5). `S` abbreviates the driver script:
+
+```
+export CUDACXX=.../cuda-13.3/bin/nvcc CUDA_HOME=.../cuda-13.3
+S=examples/70_blackwell_gemm/deabstraction_trace_run.sh
+```
+
+Two rules apply to every command. First, the performance binary is the one whose util header still starts with the commented toggle; check it with `head -1 examples/70_blackwell_gemm/70_blackwell_fp16_gemm_explicit_util.hpp`, which must print `// #define CUTLASS_DEABSTRACTION_TRACE 1`. A binary built with the toggle uncommented carries the E.7.2 diagnostics, is about 12% slower (G.2) and must never be timed. Second, when using the script, set `TRACE_OUT` to a fresh directory (`trace_out_v3`, ...): the default `trace_out_v2/` holds the committed evidence of Part G and the script overwrites what it finds there; `trace_out/` holds the 2026-09-09 baseline and the pristine binary and must never be the target (E.9 item 17).
+
+## H.1 Workflow 1: the full-speed run (the deliverable)
+
+The two Section 0 commands, unchanged:
+
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_COMPILER="$CUDACXX" -DCUDAToolkit_ROOT="$CUDA_HOME" \
+      -DCUTLASS_NVCC_ARCHS=100a -DCUTLASS_ENABLE_EXAMPLES=ON -DCUTLASS_ENABLE_TESTS=ON -DCUTLASS_ENABLE_PROFILER=ON \
+  && cmake --build build --target 70_blackwell_fp16_gemm --parallel 16
+./build/examples/70_blackwell_gemm/70_blackwell_fp16_gemm --m=8192 --n=8192 --k=8192
+```
+
+The harness allocates and fills A, B, C, runs `gemm.initialize()` (which encodes the tensor maps), one warm-up `explicit_gemm::run(gemm)`, the reference GEMM and the exact compare, then ten timed iterations of `gemm.initialize()` + `explicit_gemm::run(gemm)` (E.4, E.5). Expected output, exactly as the original example prints it:
+
+```
+  Disposition: Passed
+  Problem Size: 8192x8192x8192
+  Avg runtime: 0.889 ms        (0.888-0.891 ms on the B200 at 1965 MHz, G.2)
+  GFLOPS: 1.236e+06
+```
+
+Any other shape, mode, raster order or swizzle is rejected before the launch with `Got CUTLASS error while calling explicit_gemm::run(gemm) at line 416: Error Invalid Problem`; `beta != 0` or `alpha`/`beta` passed by pointer with `Error Not Supported`: the kernel implements the Section 0 case only (E.5.1, E.10 items 4-5, G.3 Generality). A `Disposition: Failed` or a `Got CUDA error` line means something changed in the source or the toolchain; go to Workflow 2.
+
+To repeat the E.8 comparison against the original kernel (five runs of each binary, interleaved, with the clock log and the GPU identity):
+
+```
+TRACE_OUT=trace_out_v3 $S build      # toggle off, fixed build, saves trace_out_v3/70_blackwell_fp16_gemm.explicit and build_build.log
+TRACE_OUT=trace_out_v3 $S baseline   # 5 x trace_out/70_blackwell_fp16_gemm.pristine + 5 x the new binary -> baseline.txt, timing_*.txt, timing_summary.txt, clocks.csv, gpu_identity.txt
+```
+
+`timing_summary.txt` prints both medians, the ratio and the E.8 C2 tier (accept at most +0.2%, explain up to +0.5%) and the C3 machine-state gate against the 2026-09-09 median. The pristine binary is the toggle-off build of the original example (commit `3709e725`), so the comparison is like for like on the same day and the same GPU.
+
+## H.2 Workflow 2: detailed diagnostics
+
+Two independent sources. Neither is needed for Workflow 1, and neither changes the performance binary once the toggle is restored (E.8 D6, G.3).
+
+**H.2.1 Runtime trace: CuTe types and layouts, tensor maps, memory offsets, per-instruction operands, pipeline states.**
+
+```
+TRACE_OUT=trace_out_v3 $S trace      # uncomments the toggle, rebuilds with the same cmake command, runs the fixed command once
+TRACE_OUT=trace_out_v3 $S check      # python3 check_trace.py launch0.csv host.txt -> checklist.txt (PASS/FAIL against Parts A-E)
+TRACE_OUT=trace_out_v3 $S restore    # re-comments the toggle, rebuilds, proves the explicit kernel's SASS equals the toggle-off build's
+```
+
+`trace` leaves `trace_out_v3/host.txt` (the program's stdout) and `trace_out_v3/launch0.csv` (the device records of the warm-up launch; the ten timed launches are not recorded). What `host.txt` contains, by line prefix (all printed by the toggle-guarded blocks of `70_blackwell_fp16_gemm.cu`, `deabstraction_trace_probes.hpp` and the explicit `.cu`):
+
+| Prefix | Content | Where the note explains it |
+|---|---|---|
+| `TRACE_K0` | the probe kernel's view of one 2x2 cluster: shared-memory base per rank, `mapa` results, TMEM base, SM ids | C.3 K0, D.1 |
+| `TRACE_H1` | the CuTe types of the original kernel: `TiledMma` (thread and value layouts), `SmemLayoutA/B` (`Sw<3,4,3>` composed layouts), `SmemLayoutAtomC/D` (`Sw<2,5,2>`), `EpilogueTile`, `TileShape`, `CtaShape_MNK`, `ClusterShape` | Sections 4-6, B.4 |
+| `TRACE_H2` | the four TMA copy atoms (`tma_load_a/b`, `tma_load_c`, `tma_store_d`): thread ids, value layouts, box sizes | Section 5.3, B.4 |
+| `TRACE_TYPE` | the fully spelled collective, scheduler, pipeline and copy-op types the builder chose | Sections 2-3, B.1 |
+| `TRACE_ENCODE`, `TRACE_TMAP` | the six `cuTensorMapEncodeTiled` calls (format, shape, strides, box, swizzle, L2 promotion) and the 128-byte encoded maps word by word | Section 5.3, D.5 |
+| `TRACE_HOST sizeof_*`, `off_*` | `SharedStorage` sizes and the 31 byte offsets of every barrier, CLC response slot, TMEM pointer and tensor buffer | Section 6.2 |
+| `TRACE_HOST scheduler_*`, `grid`, `block` | the tile scheduler's parameters and the launch shape | Section 7.4, D.5 |
+| `TRACE_HOST kernel_*`, `max_active_clusters`, `device_*` | `cudaFuncGetAttributes` of the explicit kernel (registers, local, shared, cluster attributes), occupancy (33), device facts | D.1, E.5.4 |
+| `TRACE_HOST explicit_*`, `trace_seq_*`, `trace_records` | the explicit kernel's name, `sizeof(ExplicitGemmParams)`, the discriminator, per-kind record counts | E.7.3, G.1 |
+| `TRACE_HANG`, `TRACE_HANG_HB` | only if a wait exceeded 4 s: site, Section 6.2 offset, parity, tile, k-tile of every stuck warp, plus the heartbeats | E.7.2 B1/B2 |
+| `TRACE_B4` | only if the compare failed: the mismatch map (tiles, halves, subtiles, D/ref ratios) | E.7.2 B4 |
+
+`launch0.csv` has one row per record, `kind,bx,by,rank,warp,lane,smid,seq,t,v0..v9` (`t` is `%globaltimer` in ns). The kinds and their payloads (`deabstraction_trace.hpp`, E.7.3):
+
+| kind | Name | Payload (`v0..`) | What it shows |
+|---|---|---|---|
+| 1, 11 | K1a/K1b | shared-memory base and the addresses of the pipeline barriers, `smem_D`, `tmem_base_ptr`, rank, first-CTA flag | the memory map of every rank: base `0x400 + (rank << 24)` and the Section 6.2 offsets |
+| 2 | K2 | TMEM base pointer, rank, leader flag, site | the accumulator column base (0) as seen by the MMA and epilogue warps |
+| 3 | K3 | `desc_a`, `desc_b`, `tmem_c`, `idesc`, `scale_c` | every `tcgen05.mma` operand of the probed leaders (D.7 values) |
+| 4 | K4a | coordinates, destination smem address, size, mbarrier address | every TMA load of the probed cluster (A multicast and B) |
+| 5 | K4b | coordinates, source smem address, active-lane count | every TMA store of D |
+| 7, 8, 9 | K5a/b/c | CLC state (index, phase, count), raw response words, `valid`, decoded tile | the scheduler traffic: which cluster got which tile when (D.3) |
+| 10 | K0 | probe kernel (see `TRACE_K0`) | |
+| 13 | K_TAIL | tail site, `{idx, phase}` waited on, tile counter | the pipeline states at the end of every role warp (explicit kernel only) |
+
+`check` prints one PASS/FAIL line per prediction (sections 1-8: addresses, TMEM, MMA operands, TMA operands, CLC, host facts, explicit-kernel checks, trace self-checks) and a summary; 0 FAIL is the expected result (4116 PASS for the 2026-09-11 run). To read the records yourself, the Python snippets of G.1 and D.3 (per-kind multisets, tiles per cluster, per-tile time) are the templates. The toggle-on binary also prints the `Avg runtime` of its timed loop; discard it (C.8, G.2).
+
+**H.2.2 Compiled code: SASS, PTX, resources.**
+
+```
+TRACE_OUT=trace_out_v3 $S build      # if not already done: toggle off, fixed build, saves the binary
+TRACE_OUT=trace_out_v3 $S inspect    # cuobjdump on the saved binary + check_sass.py
+```
+
+`inspect` writes into `trace_out_v3/`: `sass_explicit.txt` and `ptx_explicit.txt` (the explicit kernel only, cut by the function-name substring `explicit_blackwell_fp16_gemm_kernel`), `sass.txt` and `ptx.txt` (every kernel in the binary, including the never-launched CUTLASS kernel and the reference kernels), `sass_gemm.txt` (the CUTLASS kernel, diffed against the 2026-09-09 dump), `resources.txt` (`REG`, `STACK`, `SHARED`, `LOCAL`, constant banks per kernel), `elf.txt` (the two `sm_100a` cubins), `config.txt` (CMake cache, `flags.make`, toolchain versions), `sass_summary.txt` (mnemonic families) and `sass_checklist.txt` (the E.7.4 inventory: every PTX and SASS row with PASS/FAIL, expected 93 PASS, 0 FAIL, 0 WARN). Without the script the same dumps are:
+
+```
+BIN=./build/examples/70_blackwell_gemm/70_blackwell_fp16_gemm
+cuobjdump --dump-sass "$BIN" > sass.txt
+cuobjdump --dump-ptx  "$BIN" > ptx.txt
+cuobjdump --dump-resource-usage "$BIN"
+awk '/^Fatbin /{p=0} /Function :/{p=index($0, "explicit_blackwell_fp16_gemm_kernel") > 0} p' sass.txt > sass_explicit.txt
+awk '/^Fatbin /{p=0} /^\.visible \.entry|^\.entry/{p=index($0, "explicit_blackwell_fp16_gemm_kernel") > 0} p' ptx.txt > ptx_explicit.txt
+python3 examples/70_blackwell_gemm/check_sass.py ptx_explicit.txt sass_explicit.txt resources.txt explicit_blackwell_fp16_gemm_kernel
+```
+
+Reading aids: D.2 is the PTX-to-SASS dictionary for every primitive (`UTCHMMA` = `tcgen05.mma`, `UTCBAR` = `tcgen05.commit`, `UTMALDG`/`UTMASTG` = TMA load/store, `SYNCS.*` = mbarrier operations, `UGETNEXTWORKID` = the CLC query, `LDTM` = `tcgen05.ld`, `ACQBULK`/`PREEXIT` = `griddepcontrol`); G.3 lists the explicit kernel's own counts and hot-loop addresses next to the baseline's; E.7.4 states the contract each `check_sass.py` row enforces. The PTX is the `compute_100a` image embedded by the fixed flags, so it is the exact text nvcc emitted for the inline-asm wrappers of E.6.2.
+
+**H.2.3 Everything in one go.**
+
+```
+TRACE_OUT=trace_out_v3 $S all
+```
+
+runs `trace`, `check`, then stops unless `host.txt` says `Disposition: Passed` and the checklist has 0 FAIL, then `build`, `inspect`, `baseline`, `restore` (F.5 order). It leaves the toggle off and the performance binary in `build/`; `build_trace.log`, `build_build.log` and `build_restore.log` hold the compiler output of the three builds. If any step fails, the script prints a note that the toggle may still be on; run `$S restore` before taking any performance number.
+
+## H.3 Where the sources of each output are
+
+| Output | Produced by |
+|---|---|
+| `Disposition`, `Avg runtime`, `GFLOPS` | the unchanged harness `70_blackwell_fp16_gemm.cu` (E.4) |
+| `TRACE_*` host lines | `trace_host_probes<Gemm>` in `deabstraction_trace_probes.hpp` (original kernel's types and maps) and `explicit_gemm::trace_begin/trace_end` in `70_blackwell_fp16_gemm_explicit.cu` (explicit kernel's attributes, hang and mismatch reports) |
+| `launch0.csv` | `TRACE_RECORD` probes inside the explicit kernel (`clc_consume`, `load_ktiles`, the role functions) and the K0 probe kernel, all under `#if defined(CUTLASS_DEABSTRACTION_TRACE)`; the buffer lives in the kernel TU (`deabstraction_trace.hpp`, E.7.3) |
+| `checklist.txt` | `check_trace.py` |
+| `sass_*`, `ptx_*`, `resources.txt`, `elf.txt` | `cuobjdump` (CUDA 13.3) |
+| `sass_checklist.txt` | `check_sass.py` |
+| `timing_summary.txt`, `clocks.csv`, `gpu_identity.txt` | the `baseline` step of `deabstraction_trace_run.sh` (`nvidia-smi` for the last two) |
+
+## H.4 Reading the code
+
+The three source files carry a documentation layer added after the first run (comment-only: the comment-stripped code is byte-identical to the committed `829f0645` version, so no rebuild is needed for the binary to stay the one measured in Part G). Every section banner and many trailing comments carry tags:
+
+| Tag | Meaning |
+|---|---|
+| `[PROD]` | production path, compiled into the performance binary |
+| `[TRACE]` | diagnostics compiled only under `CUTLASS_DEABSTRACTION_TRACE` (every such block sits inside `#if defined(...)`; the 27 bare `#if` lines inside the roles are tagged too) |
+| `[CHECK]` | compile-time verification (`static_assert`, the `cute::Swizzle` cross-check); no code emitted |
+| `[HOST]` | host-side code (launch mirror, trace entry points, the header bridge) |
+| `tcgen05`, `TMA`, `mbarrier`, `CLC`, `GDC`, `LAYOUT` | the hardware family or the hand-written CuTe layout / coordinate / offset arithmetic a section or wrapper belongs to |
+
+`70_blackwell_fp16_gemm_explicit.cu` opens with a legend, a file map of its twelve sections and a "numbers at a glance" block (problem, cluster, tile, shared-memory map, TMA boxes, per-stage byte accounting, TMEM, descriptors, barrier counts, masks, epilogue). Section 1 quotes the CuTe layouts of the CUTLASS kernel (`SmemLayoutA/B`, the C/D atom, `TiledMMA`, the tensor-map encodes) next to the constants that replace them; each role section (5-9) starts with its protocol as a numbered step list with the barrier counts, parities and masks, followed by worked examples with concrete numbers (TMA coordinates and destination addresses for tile (5, 9), k-tile 7; the CLC tile mapping for response (10, 6); the descriptor low words for stage 3, k-block 2; the epilogue store offsets for lanes 0, 9 and 31; the TMEM address for warp 2, stage 1, subtile 3; the D box coordinates for subtile 3, box 2). The 37 PTX wrappers are grouped by family in the section 3 banner and individually tagged. The `.hpp` gives the byte map of `ExplicitGemmParams` (offsets of every field, the two admissible sizes, and the constant-bank addresses the SASS reads) and the expected values of every bridged field; the util header explains the toggle.
+
+---
+
+# Part I. Closure record (task completed 2026-09-11)
+
+## I.1 What was delivered
+
+| Deliverable | Where | State |
+|---|---|---|
+| Explicit kernel + host function | `70_blackwell_fp16_gemm_explicit.cu`, `.hpp`, `_util.hpp` | committed `829f0645`; documentation layer of H.4 added afterwards (comment-only, code byte-identical) |
+| Harness and build change | `70_blackwell_fp16_gemm.cu` (line 1, one include, two `explicit_gemm::run(gemm)` call sites, guarded trace blocks re-pointed), `CMakeLists.txt` (one source line) | committed `829f0645` |
+| Evidence of the acceptance run | `trace_out_v2/` (host trace, records, checklists, SASS/PTX dumps, timing, clocks, the toggle-off binary) | committed `1ddd85d0` |
+| Checkers and driver script | `check_trace.py` (sections 1-8), `check_sass.py`, `deabstraction_trace_run.sh` | committed `d50a6f43` |
+| This document | Parts A-I | Parts G, H, I and the header written on 2026-09-11 |
+
+## I.2 Acceptance, in one table
+
+| Claim | Evidence | Section |
+|---|---|---|
+| Same output | exact compare `Passed` in 1 toggle-on + 5 toggle-off runs; trace records identical to the original kernel's except dynamic CLC tile ids; bit-identical arithmetic shown in SASS (`acc x alpha`, then `0 x beta + t`, one rounding) | G.1, G.3 |
+| Same performance | median 0.889354 ms (explicit) vs 0.889917 ms (original, same day, interleaved), ratio 0.99937, per-pair 0.99937-1.00068, below the run-to-run spread; clocks steady at 1965 MHz | G.2 |
+| No high-level abstraction | one `__global__` kernel, 37 verbatim PTX wrappers, CuTe only in `static_assert`s and the host-side `cute::get`; PTX/SASS inventories exact (93 PASS, 0 FAIL); REG 26, LOCAL 0 | G.3, G.4 |
+| Reviewed | three pre-compile passes (6 + 5 + 7 lenses) and one post-run 32-agent analysis: no defect affecting output, performance or abstraction | F.3, G.8 |
+
+## I.3 Optional follow-ups (not required for completion)
+
+1. Option B of E.10: encode the tensor maps in the host function and drop `gemm.initialize()` from the timed loop; the CUTLASS kernel would then leave the binary. Requires a new trace + baseline run (H.2, H.1).
+2. Tighten `static_assert(sizeof(ExplicitGemmParams) == 576 || == 640)` to `== 640` for the fixed CUDA 13.3 toolkit (G.5).
+3. One more `TRACE_OUT=trace_out_v3 $S all` to put the build logs (`-Wconversion` list, proof of recompilation) and `gpu_identity.txt` on record (G.7).
+4. The untriggered diagnostics paths (4 s hang bound, `TRACE_B4` classifier) could be exercised deliberately by breaking a barrier count in a scratch copy; only worth doing if the kernel is ever modified.
+
+## I.4 Boundaries that stay
+
+The kernel implements the Section 0 case: M = N = K = 8192, L = 1, alpha and beta by value, beta = 0, no swizzle, AlongN raster, cluster (2,2,1). Everything else is rejected before the launch (E.5.1). Any change to the kernel source must be followed by the H.2.1 trace run and the H.1 interleaved timing before a performance or equivalence claim is repeated.

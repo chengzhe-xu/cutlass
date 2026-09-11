@@ -7,6 +7,11 @@
  * cutlass/cutlass.h (for cutlass::Status); it holds no device code, no CuTe/CUTLASS kernel types, and it
  * must not redefine CUDA_CHECK / CUTLASS_CHECK (examples/common/helper.h defines them for the harness).
  * Every helper is `inline` or a macro because both translation units include this header.
+ *
+ * Legend (as in the .cu): [PROD] production, [HOST] host-side, [CHECK] compile-time verification, [TRACE] toggle-on only.
+ * The toggle on line 1 selects between the two binaries the note distinguishes: commented out = the performance binary
+ * (Part H.1); uncommented = the diagnostics binary that records TRACE_* lines and launch0.csv (Part H.2.1). Both .cu files
+ * include this header first, so one edit switches both translation units; deabstraction_trace_run.sh flips it with sed.
  **************************************************************************************************/
 #pragma once
 
@@ -18,7 +23,9 @@
 
 namespace explicit_gemm {
 
-// ---- Section 0 constants that need no CUDA type (checked here so a typo is a build error in both TUs) ----
+// ---- [PROD] [CHECK]  Section 0 constants that need no CUDA type (checked here so a typo is a build error in both TUs).
+//      The fixed run in numbers: 8192^3 problem, 128 x 128 CTA tiles, 64-wide k-tiles (128 per tile), 2 x 2 clusters, grid 64 x 64
+//      (x indexes N, y indexes M after the AlongN transpose), 256 threads, 230400 B of dynamic shared memory, 32 x 32 cluster tiles.
 constexpr int      kFixedM = 8192, kFixedN = 8192, kFixedK = 8192, kFixedL = 1;   // Section 0 shape
 constexpr int      kCtaTileM = 128, kCtaTileN = 128, kTileK = 64;                  // Section 4 CTA tile / k-tile
 constexpr int      kClusterX = 2, kClusterY = 2, kClusterZ = 1;                    // Section 2 cluster (2,2,1)
@@ -38,14 +45,14 @@ static_assert(kFixedK % kTileK == 0 && kFixedK / kTileK == 128, "128 k-tiles per
 static_assert(kProblemTilesM == 32 && kProblemTilesN == 32, "32 x 32 cluster tiles (Section 7.4)");
 static_assert(kSmemBytes <= 232448, "opt-in dynamic shared memory of the B200 (Section 0)");
 
-// ---- Status mapping used by the host function (E.5.2): mirrors ClusterLauncher's Return_Status (cluster_launch.hpp),
+// ---- [HOST] [PROD]  Status mapping used by the host function (E.5.2): mirrors ClusterLauncher's Return_Status (cluster_launch.hpp),
 //      cudaSuccess -> kSuccess, any CUDA error -> kInvalid.  run() in the .cu then collapses kInvalid (and a non-success
 //      cudaGetLastError) to kErrorInternal, as GemmUniversalAdapter::run() does (gemm_universal_adapter.h:564-574; F.2 item 11).
 inline cutlass::Status status_from_cuda(cudaError_t e) {
   return e == cudaSuccess ? cutlass::Status::kSuccess : cutlass::Status::kInvalid;
 }
 
-// ---- Trace-only host printing (compiles to nothing with the toggle off).  Currently unused: the toggle-on prints of the .cu
+// ---- [TRACE]  Trace-only host printing (compiles to nothing with the toggle off).  Currently unused: the toggle-on prints of the .cu
 //      sit inside #if defined(CUTLASS_DEABSTRACTION_TRACE) blocks and call std::printf directly (F.2 item 12). ----
 #if defined(CUTLASS_DEABSTRACTION_TRACE)
 #define EXPLICIT_GEMM_TRACE_PRINTF(...) std::printf(__VA_ARGS__)
