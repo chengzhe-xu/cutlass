@@ -429,9 +429,12 @@ def main(csv_path, host_path):
     check("device_sm_count", hval(host, "device_sm_count") == 148, str(hval(host, "device_sm_count")), "Section 0 (B200, informational)")
     check("device_reserved_smem", hval(host, "device_reserved_smem_per_block") == 1024, str(hval(host, "device_reserved_smem_per_block")), "B.6 (informational)")
     macros = {"macro_NDEBUG": 1, "macro_CUDA_API_PER_THREAD_DEFAULT_STREAM": 0, "macro_CUTLASS_ENABLE_DIRECT_CUDA_DRIVER_CALL": 0,
-              "macro_CUTLASS_ENABLE_GDC_FOR_SM100": 1, "macro_CUTLASS_ENABLE_SYNCLOG": 0, "macro_CUTLASS_ENABLE_CUDA_HOST_ADAPTER": 0}
+              "macro_CUTLASS_ENABLE_GDC_FOR_SM100": 1, "macro_CUTLASS_ENABLE_SYNCLOG": 0}
     for k, v in macros.items():
         check(k, hval(host, k) == v, str(hval(host, k)), "Section 0 / D14")
+    # CUTLASS_ENABLE_CUDA_HOST_ADAPTER is always *defined* (cuda_host_adapter.hpp:75-76 defaults it to `false`), so an
+    # #ifdef probe reports 1 in every build; the adapter is disabled because the macro's value is false.
+    print(f"INFO macro_CUTLASS_ENABLE_CUDA_HOST_ADAPTER defined={hval(host, 'macro_CUTLASS_ENABLE_CUDA_HOST_ADAPTER')} (always defined; value false by default, cuda_host_adapter.hpp:75-76)")
     check("device_IsGdcGloballyEnabled", dev.get("IsGdcGloballyEnabled") == "1", str(dev), "Section 11 (GDC on)")
     check("device_FEAT_SM100_ALL", dev.get("FEAT_SM100_ALL") == "1" and dev.get("CUDA_ARCH") == "1000", str(dev), "Section 0 (sm_100a)")
     nv = host.get("nvcc_version")
