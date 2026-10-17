@@ -193,7 +193,7 @@ static_assert(kMainloopTxBytes == 49152 && kClcEmptyCount == 32 + 4 * (32 + 128 
 
 // [CHECK] LAYOUT  CuTe cross-check (compile time only, the only use of CuTe in this TU): the epilogue smem byte formula uses
 // Swizzle<2,5,2> on byte offsets, bits [5,7) ^= bits [7,9) (Layout_MN_SW128_32B_Atom<float>, Section 4; B.3.3 step 17).
-// Example: byte offset 0x1E4 (row 121 of a 32 x 4 fp32 atom column block) -> 0x1E4 ^ ((0x1E4 & 0x180) >> 2) = 0x1E4 ^ 0x60 = 0x184.
+// Example: byte offset 0x1E4 (fp32 element 121 = row 25 of column 3 of a 32 x 4 fp32 atom column block) -> 0x1E4 ^ ((0x1E4 & 0x180) >> 2) = 0x1E4 ^ 0x60 = 0x184.
 __host__ __device__ constexpr uint32_t epi_swz(uint32_t o) { return o ^ ((o & 0x180u) >> 2); }
 using EpiSwizzle = cute::Swizzle<2, 5, 2>;
 static_assert(EpiSwizzle::num_bits == 2 && EpiSwizzle::num_base == 5 && EpiSwizzle::num_shft == 2, "Swizzle<2,5,2>");
@@ -790,7 +790,7 @@ __device__ __forceinline__ void producer_role(ExplicitGemmParams const& params, 
     // (load_order_barrier.arrive() between the two load() calls is skipped: is_epi_load_needed is false for beta = 0)
     load_ktiles(params, st, k_tiles - k_tile_prologue, smem_base, a_dst_base, b_dst_base, full_masked_base, empty_base, a_mcast_mask, is_leader_lane, a_row, b_col, tile);
     __syncwarp();                                                                              // (kernel :664)
-    valid = clc_consume<0u>(smem_base, x, y, clc_idx, clc_phase, clc_count, tm_next, tn_next, tile);   // consume response t AFTER this tile's loads (:666-671)
+    valid = clc_consume<0u>(smem_base, x, y, clc_idx, clc_phase, clc_count, tm_next, tn_next, tile);   // consume response t AFTER this tile's loads (:665-670)
     tm = tm_next; tn = tn_next;                                                                // the fetched tile becomes current only here
     ++tile;
   } while (valid);
